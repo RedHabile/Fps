@@ -526,9 +526,6 @@ export function buildGun(key: ModelKey): GunBuild {
   grip = ANCHORS[key].grip;
   fore = ANCHORS[key].fore;
 
-  grip = ANCHORS[key].grip;
-  fore = ANCHORS[key].fore;
-
   // Détails de fabrication propres à chaque famille : rails, nervures,
   // garde-main texturé et renforts qui donnent une silhouette moins générique.
   const longGun = !['pistol_basic', 'pistol_auto', 'pistol_sup', 'revolver'].includes(key);
