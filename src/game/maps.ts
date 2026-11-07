@@ -225,6 +225,8 @@ const SOUK: MapDef = {
     ...SHELL(7.5, 0),
     ...COVER,
     // habillage souk : échoppes et auvents
+    ...quad({ x: -8.5, z: 3.8, w: 2.8, d: 2.0, h: 1.65, kind: 'stall', tint: 2 }),
+    ...quad({ x: -17.5, z: -5.8, w: 2.2, d: 2.2, h: 1.25, kind: 'crate', tint: 1 }),
     ...quad({ x: -19.5, z: 24.5, w: 3.6, d: 2.4, h: 2.3, kind: 'stall', tint: 1 }),
     ...quad({ x: -30, z: 13.5, w: 4.6, d: 1.4, h: 1.25, kind: 'planter', tint: 1 }),
     ...quad({ x: -6.5, z: 24, w: 2.2, d: 2.2, h: 1.3, kind: 'crate', tint: 0 }),
@@ -265,6 +267,8 @@ const CRYO: MapDef = {
     ...SHELL(8.5, 1),
     ...COVER,
     // habillage polaire : cuves cryogéniques
+    ...quad({ x: -8.5, z: 3.8, w: 2.4, d: 2.4, h: 2.6, kind: 'tank', tint: 0 }),
+    ...quad({ x: -17.5, z: -5.8, w: 3.0, d: 1.8, h: 1.55, kind: 'crate', tint: 3 }),
     ...quad({ x: -19.5, z: 24.5, w: 3.2, d: 3.2, h: 2.4, kind: 'tank', tint: 2 }),
     ...quad({ x: -30, z: 13.5, w: 3, d: 3, h: 2.3, kind: 'tank', tint: 1 }),
     ...quad({ x: -6.5, z: 24, w: 2.4, d: 2.4, h: 1.35, kind: 'barrel', tint: 3 }),
@@ -305,6 +309,8 @@ const NEON: MapDef = {
     ...SHELL(10, 2),
     ...COVER,
     // habillage urbain : kiosques et enseignes
+    ...quad({ x: -8.5, z: 3.8, w: 1.5, d: 1.5, h: 3.8, kind: 'sign', tint: 2 }),
+    ...quad({ x: -17.5, z: -5.8, w: 3.4, d: 1.6, h: 1.35, kind: 'stall', tint: 3 }),
     ...quad({ x: -19.5, z: 24.5, w: 3.6, d: 2.6, h: 2.4, kind: 'stall', tint: 3 }),
     ...quad({ x: -30, z: 13.5, w: 2.8, d: 2.8, h: 1.5, kind: 'sign', tint: 2 }),
     ...quad({ x: -6.5, z: 24, w: 1.4, d: 1.4, h: 5.2, kind: 'pillar', tint: 1 }),
@@ -362,6 +368,8 @@ const BUNKER: MapDef = {
     ...SHELL(8, 0),
     ...COVER,
     // habillage bunker : machinerie et piliers porteurs
+    ...quad({ x: -8.5, z: 3.8, w: 1.25, d: 1.25, h: 4.0, kind: 'pillar', tint: 3 }),
+    ...quad({ x: -17.5, z: -5.8, w: 3.0, d: 2.0, h: 1.8, kind: 'tank', tint: 1 }),
     ...quad({ x: -19.5, z: 24.5, w: 3.2, d: 3.2, h: 2.5, kind: 'tank', tint: 0 }),
     ...quad({ x: -30, z: 13.5, w: 2.4, d: 4.4, h: 1.6, kind: 'crate', tint: 2 }),
     ...quad({ x: -6.5, z: 24, w: 1.2, d: 1.2, h: 4.6, kind: 'pillar', tint: 3 }),

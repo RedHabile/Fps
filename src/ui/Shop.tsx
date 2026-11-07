@@ -42,7 +42,7 @@ export default function Shop({ profile, setProfile, onClose }: {
   setProfile: (p: Profile) => void;
   onClose: () => void;
 }) {
-  const [tab, setTab] = useState<Tab>('agents');
+  const [tab, setTab] = useState<Tab>('skins');
   const [msg, setMsg] = useState<string | null>(null);
 
   const flash = (t: string) => { setMsg(t); setTimeout(() => setMsg(null), 1800); };
@@ -87,7 +87,7 @@ export default function Shop({ profile, setProfile, onClose }: {
               <Sparkles size={20} className="text-[#ff4655]" />
               <div>
                 <div className="font-display font-bold text-xl tracking-[.18em] text-[#ece8e1]">BOUTIQUE</div>
-                <div className="font-display text-[10px] tracking-[.2em] text-white/40">GAGNEZ DES CRÉDITS EN REMPORTANT DES MATCHS</div>
+                <div className="font-display text-[10px] tracking-[.2em] text-white/40">SKINS D’ARMES · ACHETEZ AVEC VOS CRÉDITS GAGNÉS EN MATCH</div>
               </div>
             </div>
             <div className="flex items-center gap-4">
@@ -180,23 +180,23 @@ export default function Shop({ profile, setProfile, onClose }: {
           )}
 
           {tab === 'skins' && (
-            <div className="grid grid-cols-4 gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {SKINS.map((sk) => {
                 const owned = profile.ownedSkins.includes(sk.id);
                 const active = profile.skin === sk.id;
                 const rc = SKIN_COLORS[sk.rarity];
                 return (
                   <button key={sk.id} onClick={() => buySkin(sk)} onMouseEnter={() => sfx.uiHover()}
-                    className="clip-card p-2.5 text-left transition-all relative"
+                    className="clip-card p-3 text-left transition-all relative hover:-translate-y-1 hover:brightness-125"
                     style={{
                       background: active ? `${rc}22` : owned ? 'rgba(255,255,255,.05)' : 'rgba(255,255,255,.028)',
                       border: `1px solid ${active ? rc : owned ? 'rgba(255,255,255,.14)' : 'rgba(255,255,255,.08)'}`,
                     }}>
                     <div className="flex justify-center py-1.5 mb-1"
                       style={{ background: 'rgba(0,0,0,.3)', border: '1px solid rgba(255,255,255,.06)' }}>
-                      <SkinPreview sk={sk} />
+                      <SkinPreview sk={sk} size={116} />
                     </div>
-                    <div className="font-display font-bold text-[13px] tracking-wider text-[#ece8e1] truncate">{sk.name}</div>
+                    <div className="font-display font-bold text-[15px] tracking-wider text-[#ece8e1] truncate">{sk.name}</div>
                     <div className="font-display text-[8px] tracking-[.2em] font-bold mb-1" style={{ color: rc }}>
                       {sk.rarity.toUpperCase()} · {sk.collection}
                     </div>
@@ -214,12 +214,12 @@ export default function Shop({ profile, setProfile, onClose }: {
         </div>
 
         {/* pied */}
-        <div className="shrink-0 px-5 py-3 flex items-center justify-between"
+        <div className="shrink-0 px-5 py-3 flex flex-wrap items-center justify-between gap-3"
           style={{ borderTop: '1px solid rgba(255,255,255,.09)', background: 'rgba(8,14,20,.9)' }}>
           <div className="flex items-center gap-4 font-display text-[10px] tracking-[.18em] text-white/40">
             <span className="flex items-center gap-1.5"><ShieldCheck size={12} className="text-[#4df3d3]" /> {profile.wins} VICTOIRES</span>
             <span className="flex items-center gap-1.5"><Crosshair size={12} className="text-[#ff6d7a]" /> {profile.kills} ÉLIMINATIONS</span>
-            <span>VICTOIRE = +600 CR · DÉFAITE = +220 CR · ÉLIMINATION = +35 CR</span>
+            <span>MATCHS : VICTOIRE +600 · DÉFAITE +220 · +35 / ÉLIMINATION</span>
           </div>
           <button onClick={onClose} className="vbtn vbtn-red clip-btn px-6 py-2.5 text-sm">VALIDER</button>
         </div>
