@@ -13,7 +13,7 @@ import {
   Map as MapIcon, Eye, Monitor, Trophy, RotateCcw, Check, ChevronRight, Coins, Flame, Smartphone, Wifi, Sparkles,
 } from 'lucide-react';
 
-type Panel = 'none' | 'deploy' | 'arsenal' | 'settings' | 'controls' | 'pad' | 'online' | 'shop';
+type Panel = 'none' | 'deploy' | 'arsenal' | 'career' | 'settings' | 'controls' | 'pad' | 'online' | 'shop';
 
 // ——— mini-plan de carte dessiné depuis les données ———
 function MapPlan({ map, size = 150, highlight }: { map: MapDef; size?: number; highlight?: boolean }) {
