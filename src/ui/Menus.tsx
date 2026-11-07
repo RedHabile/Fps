@@ -465,7 +465,7 @@ export default function MainMenu({ settings, onPlay, onSettings, onOnline, onSho
         <div className="hazard absolute -left-40 top-[74%] w-[130%] h-[2px] opacity-25" style={{ animation: 'diagSlide 13s ease-in-out infinite alternate-reverse' }} />
       </div>
 
-      <div className="relative z-10 h-full flex flex-col justify-center max-w-4xl"
+      <div className="relative z-10 h-full flex flex-col justify-center max-w-5xl"
         style={{ paddingLeft: 'clamp(28px, 6vw, 86px)', paddingRight: '24px' }}>
         <div className="anim-reveal flex items-center gap-3 mb-2" style={{ animationDelay: '.05s' }}>
           <div className="w-10 h-[3px] bg-[#ff4655]" />
@@ -478,18 +478,18 @@ export default function MainMenu({ settings, onPlay, onSettings, onOnline, onSho
           4 CARTES · 12 ARMES · SPIKE · EN LIGNE
         </p>
 
-        <div className="anim-reveal flex flex-col gap-2 w-[420px] max-w-[88vw]" style={{ animationDelay: '.3s' }}>
-          {items.map((it) => (
+        <div className="anim-reveal grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-[min(640px,90vw)]" style={{ animationDelay: '.3s' }}>
+          {items.map((it, index) => (
             <button key={it.k} onMouseEnter={() => sfx.uiHover()}
               onClick={() => { sfx.init(); sfx.uiClick(); if (it.k === 'play') onPlay(); else if (it.k === 'online') onOnline(); else if (it.k === 'shop') onShop(); else setPanel(it.k as Panel); }}
-              className="group clip-btn flex items-center gap-3 px-5 py-3 transition-all text-left"
+              className={`group clip-btn flex items-center gap-3 px-4 py-3 min-h-[66px] transition-all text-left hover:-translate-y-0.5 hover:brightness-125 ${index === 0 ? 'sm:col-span-2 min-h-[76px]' : ''}`}
               style={{
                 background: it.red ? '#ff4655' : 'rgba(236,232,225,.055)',
                 border: `1px solid ${it.red ? '#ff4655' : 'rgba(236,232,225,.16)'}`,
               }}>
               <span className={it.red ? 'text-white' : 'text-[#ff4655]'}>{it.i}</span>
               <span className="flex-1 min-w-0">
-                <span className={`block font-display font-bold tracking-[.16em] ${it.red ? 'text-white text-lg' : 'text-[#ece8e1] text-sm'}`}>{it.t}</span>
+                <span className={`block font-display font-bold tracking-[.16em] ${it.red ? 'text-white text-xl' : 'text-[#ece8e1] text-[15px]'}`}>{it.t}</span>
                 <span className={`block font-display text-[10px] tracking-[.14em] truncate ${it.red ? 'text-white/75' : 'text-white/35'}`}>{it.s}</span>
               </span>
               <ChevronRight size={16} className={`shrink-0 transition-transform group-hover:translate-x-1 ${it.red ? 'text-white/80' : 'text-white/30'}`} />
