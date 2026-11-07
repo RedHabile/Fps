@@ -526,6 +526,26 @@ export function buildGun(key: ModelKey): GunBuild {
   grip = ANCHORS[key].grip;
   fore = ANCHORS[key].fore;
 
+  grip = ANCHORS[key].grip;
+  fore = ANCHORS[key].fore;
+
+  // Détails de fabrication propres à chaque famille : rails, nervures,
+  // garde-main texturé et renforts qui donnent une silhouette moins générique.
+  const longGun = !['pistol_basic', 'pistol_auto', 'pistol_sup', 'revolver'].includes(key);
+  if (longGun) {
+    rail(g, -0.48, 0.12, 0.075, M.darkSteel);
+    for (const side of [-1, 1]) {
+      bx(g, M.polymerLight, [side * 0.027, -0.005, -0.24], [0.012, 0.045, 0.22]);
+      for (let i = 0; i < 5; i++) {
+        bx(g, M.darkSteel, [side * 0.034, -0.005, -0.31 + i * 0.035], [0.006, 0.012, 0.018]);
+      }
+    }
+    bx(g, M.accentRed, [0, -0.047, 0.12], [0.025, 0.008, 0.11]);
+  } else {
+    bx(g, M.darkSteel, [0, 0.067, 0.005], [0.026, 0.009, 0.12]);
+    for (let i = 0; i < 3; i++) bx(g, M.darkSteel, [0.026, 0.035, -0.02 - i * 0.035], [0.004, 0.008, 0.018]);
+  }
+
   g.add(port);
   g.traverse((o) => { if ((o as THREE.Mesh).isMesh) { o.castShadow = false; o.receiveShadow = false; (o as THREE.Mesh).renderOrder = 2; } });
   return { group: g, muzzleZ, muzzleY, sightY, grip, fore, ejectPort: port, movingParts: moving, mag: magPart, reloadKind };
@@ -565,13 +585,14 @@ export function buildHands(grip: Vec, fore: Vec, twoHanded: boolean): THREE.Grou
     // pouce rabattu de l'autre côté
     add(h, G.box, M.glove, [-side * 0.021, 0.01, -0.018], [0.018, 0.032, 0.02], [0.42, 0, side * 0.5]);
 
-    // poignet : manchette courte, tronquée (pas de bras visible)
-    // poignet : manchette puis amorce de manche qui plonge vers le bas-arrière.
-    // (un cylindre pointé vers la caméra se lisait comme une boule grise)
-    add(h, G.box, M.polymer, [0, -0.004, 0.028], [0.046, 0.046, 0.03]);      // manchette
-    add(h, G.box, M.accentRed, [0, 0.02, 0.028], [0.038, 0.006, 0.032]);     // liseré
-    // amorce de manche : fine et plongeante, elle quitte le cadre
-    add(h, G.cyl, M.sleeve, [0, -0.03, 0.054], [0.042, 0.075, 0.042], [1.05, 0, 0]);
+    // Manchette renforcée et avant-bras textile : la manche remonte depuis
+    // le bas du cadre, au lieu de laisser apparaître uniquement des mains flottantes.
+    add(h, G.cyl, M.darkSteel, [0, -0.004, 0.028], [0.052, 0.052, 0.034], [1.05, 0, 0]);
+    add(h, G.box, M.accentRed, [0, 0.02, 0.028], [0.044, 0.007, 0.034]);
+    const sleeve = add(h, G.capsule, M.sleeve, [0, -0.155, 0.105], [0.092, 0.34, 0.092], [1.12, 0, 0]);
+    sleeve.renderOrder = 0;
+    add(h, G.box, M.polymer, [side * 0.028, -0.13, 0.075], [0.012, 0.15, 0.014], [0.08, 0, 0]);
+    add(h, G.box, M.glove, [0, -0.045, 0.052], [0.054, 0.018, 0.012]);
     return h;
   };
 
