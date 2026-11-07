@@ -1726,7 +1726,7 @@ export class Game {
     this.shake = Math.max(0, this.shake - realDt * 3.4);
     this.hurtKick = Math.max(0, this.hurtKick - realDt * 3.2);
     const sh = this.shake * this.shake;
-    const amp = sh * 0.05;
+    const amp = sh * 0.035;
     // bruit lissé plutôt qu'aléatoire pur : tremblement crédible
     const n1 = Math.sin(this.t * 47) * Math.sin(this.t * 23.3);
     const n2 = Math.sin(this.t * 41.7) * Math.sin(this.t * 19.1);
@@ -1735,12 +1735,12 @@ export class Game {
     // ─ respiration et oscillation de marche ─
     const bp = this.player.bobPhase;
     const moveAmt = this.player.speedFrac * (ads ? 0.35 : 1) * (this.player.crouched ? 0.5 : 1);
-    const breathe = this.playerAlive ? Math.sin(this.t * 1.25) * 0.004 * (ads ? 0.3 : 1) : 0;
-    const bobY = Math.abs(Math.sin(bp)) * 0.028 * moveAmt;
-    const bobX = Math.sin(bp * 0.5) * 0.022 * moveAmt;
+    const breathe = this.playerAlive ? Math.sin(this.t * 1.15) * 0.0035 * (ads ? 0.25 : 1) : 0;
+    const bobY = Math.abs(Math.sin(bp)) * 0.018 * moveAmt;
+    const bobX = Math.sin(bp * 0.5) * 0.014 * moveAmt;
     // ─ inclinaison latérale selon le pas de côté ─
     const strafe = this.player.strafeAxis;
-    this.leanRoll += (-strafe * 0.028 * (ads ? 0.4 : 1) - this.leanRoll) * Math.min(1, realDt * 6);
+    this.leanRoll += (-strafe * 0.022 * (ads ? 0.35 : 1) - this.leanRoll) * Math.min(1, realDt * 6);
 
     this.camera.position.set(
       eye.x + amp * n1 + bobX,
