@@ -450,18 +450,6 @@ function FlashOverlay() {
   return <div className="absolute inset-0 z-30 pointer-events-none" style={{ background: `rgba(255,255,255,${s.flashed * 0.95})` }} />;
 }
 
-// ————— Pouvoir activé —————
-function AbilityToast() {
-  const s = useSnap();
-  if (!s.abilityActive) return null;
-  return (
-    <div className="absolute left-1/2 -translate-x-1/2 top-[38%] z-20 pointer-events-none anim-reveal">
-      <div className="font-display font-bold text-2xl tracking-[.3em] text-[#4df3d3]"
-        style={{ textShadow: '0 0 24px rgba(77,243,211,.8)' }}>{s.abilityActive}</div>
-    </div>
-  );
-}
-
 // ————— Spike : compte à rebours & invites —————
 function SpikeHud({ touch }: { touch: boolean }) {
   const s = useSnap();
@@ -850,26 +838,6 @@ function ShopButton({ touch }: { touch: boolean }) {
           </span>
         </span>
       </button>
-    </div>
-  );
-}
-
-// ————— Astuces contextuelles —————
-function Hints({ touch }: { touch: boolean }) {
-  const s = useSnap();
-  if (s.phase !== 'buy' || s.buyOpen || s.paused || !s.pointerLocked) return null;
-  const items = touch
-    ? [[<Coins key="a" size={12} />, 'BOUTON ACHAT'], [<Footprints key="b" size={12} />, 'BOUTON LENT'], [<Target key="c" size={12} />, 'BOUTON VISÉE']] as const
-    : [[<Coins key="a" size={12} />, '[B] BOUTIQUE'], [<Footprints key="b" size={12} />, '[MAJ] SILENCIEUX'], [<Target key="c" size={12} />, '[CLIC DROIT] VISÉE']] as const;
-  return (
-    <div className={`absolute ${touch ? 'top-[30%]' : 'bottom-28'} left-1/2 -translate-x-1/2 z-20 pointer-events-none`}>
-      <div className="flex items-center gap-4 clip-tag px-4 py-2" style={{ background: 'rgba(10,18,26,.78)' }}>
-        {items.map(([ic, tx], i) => (
-          <span key={i} className={`flex items-center gap-1.5 font-display text-[10px] tracking-[.18em] ${i === 0 ? 'text-[#ffd25d] font-bold' : 'text-white/55'}`}>
-            {ic} {tx}
-          </span>
-        ))}
-      </div>
     </div>
   );
 }
