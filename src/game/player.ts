@@ -147,7 +147,7 @@ export class Player {
 export class ViewModel {
   group = new THREE.Group();          // porteur (position/rotation animées)
   scene = new THREE.Scene();          // scène dédiée au viewmodel
-  camera = new THREE.PerspectiveCamera(68, 1, 0.02, 8);
+  camera = new THREE.PerspectiveCamera(64, 1, 0.02, 8);
   private rig = new THREE.Group();    // arme + mains
   gunTip = new THREE.Object3D();
   private build: GunBuild | null = null;
@@ -173,17 +173,17 @@ export class ViewModel {
   /** distance de port par catégorie : les armes courtes sont tenues plus près
    *  pour rester bien visibles à l'écran (comme dans un vrai FPS). */
   private static readonly HOLD: Record<string, { z: number; x: number; y: number }> = {
-    'Pistolet':      { z: -0.56, x: 0.206, y: -0.140 },
-    'Fusil à pompe': { z: -0.62, x: 0.224, y: -0.152 },
-    'PM':            { z: -0.62, x: 0.222, y: -0.150 },
-    'Fusil':         { z: -0.68, x: 0.238, y: -0.158 },
-    'Mitrailleuse':  { z: -0.70, x: 0.244, y: -0.162 },
-    'Sniper':        { z: -0.74, x: 0.246, y: -0.156 },
+    'Pistolet':      { z: -0.56, x: 0.226, y: -0.168 },
+    'Fusil à pompe': { z: -0.62, x: 0.244, y: -0.180 },
+    'PM':            { z: -0.62, x: 0.242, y: -0.178 },
+    'Fusil':         { z: -0.68, x: 0.258, y: -0.188 },
+    'Mitrailleuse':  { z: -0.70, x: 0.264, y: -0.192 },
+    'Sniper':        { z: -0.74, x: 0.266, y: -0.186 },
   };
   private showHands = true;
   /** Échelle du viewmodel. Rendu par une caméra dédiée à 55°, donc
    *  l'arme peut rester à distance confortable sans déformation. */
-  private static readonly SCALE = 0.40;
+  private static readonly SCALE = 0.50;
 
   constructor() {
     this.scene.add(this.group);
@@ -326,7 +326,8 @@ export class ViewModel {
 
     const p = this.hipPos.clone().lerp(this.adsPos, adsK);
     p.x += bobX + this.sway.x * (1 - adsK * 0.7);
-    p.y += bobY + Math.sin(t * 1.6) * 0.0028 * (1 - adsK) + this.sway.y * (1 - adsK * 0.7);
+    p.y += bobY + Math.sin(t * 1.6) * 0.0045 * (1 - adsK) + this.sway.y * (1 - adsK * 0.7);
+    p.x += Math.sin(t * 0.72) * 0.0032 * (1 - adsK);
     p.z += this.recoilZ;
     if (crouched) p.y += 0.012;
 
