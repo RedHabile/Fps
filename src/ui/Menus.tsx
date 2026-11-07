@@ -462,28 +462,29 @@ export default function MainMenu({ settings, onPlay, onSettings, onOnline, onSho
   const map = getMap(settings.mapId);
   const diff = DIFFICULTIES.find((d) => d.v === settings.difficulty) ?? DIFFICULTIES[1];
 
-  const cards: { k: 'quick' | 'custom' | 'server'; title: string; desc: string; image: string }[] = [
-    { k: 'quick', title: 'MATCH RAPIDE', desc: 'Rejoignez une partie instantanément.', image: 'linear-gradient(145deg, rgba(255,35,75,.88), rgba(120,10,35,.7))' },
-    { k: 'custom', title: 'PERSONNALISÉ', desc: 'Créez votre partie sur mesure.', image: 'linear-gradient(145deg, rgba(55,62,68,.55), rgba(8,12,17,.88))' },
-    { k: 'server', title: 'SERVEUR', desc: 'Rejoignez un serveur communautaire.', image: 'linear-gradient(145deg, rgba(55,62,68,.5), rgba(8,12,17,.9))' },
+  const modes = [
+    { id: 'quick', title: 'MATCH RAPIDE', subtitle: 'Rejoindre une partie immédiatement', number: '01', action: () => onPlay(), featured: true },
+    { id: 'custom', title: 'PERSONNALISÉ', subtitle: 'Choisir la carte et les règles', number: '02', action: () => setPanel('deploy'), featured: false },
+    { id: 'server', title: 'SERVEURS', subtitle: 'Jouer en ligne avec d’autres agents', number: '03', action: onOnline, featured: false },
   ];
 
   return (
-    <div className="absolute inset-0 overflow-hidden scanlines text-white" style={{ background: '#080b0f' }}>
+    <div className="absolute inset-0 overflow-hidden scanlines text-white" style={{ background: '#07090c' }}>
       <div className="absolute inset-0">
-        <img src="menu-art.jpg" alt="" className="w-full h-full object-cover" style={{ animation: 'floatSlow 18s ease-in-out infinite', transform: 'scale(1.04)', objectPosition: 'center' }} />
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg, rgba(5,7,10,.98) 0%, rgba(5,7,10,.94) 28%, rgba(5,7,10,.72) 54%, rgba(5,7,10,.12) 100%)' }} />
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(0deg, rgba(4,6,9,.82), transparent 42%, rgba(4,6,9,.32))' }} />
+        <img src="/menu-art.jpg" alt="" className="absolute inset-0 w-full h-full object-cover"
+          style={{ objectPosition: '72% center', animation: 'floatSlow 20s ease-in-out infinite', transform: 'scale(1.035)' }} />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg, rgba(5,7,10,.99) 0%, rgba(5,7,10,.96) 25%, rgba(5,7,10,.78) 48%, rgba(5,7,10,.12) 78%, rgba(5,7,10,.28) 100%)' }} />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(0deg, rgba(4,6,9,.88), transparent 38%, rgba(4,6,9,.32))' }} />
       </div>
 
-      <header className="absolute top-0 inset-x-0 z-20 h-[76px] flex items-center justify-between px-5 sm:px-10"
-        style={{ background: 'rgba(5,7,10,.72)', borderBottom: '1px solid rgba(255,70,85,.45)', backdropFilter: 'blur(12px)' }}>
-        <nav className="flex items-center gap-1 sm:gap-5 h-full">
+      <header className="absolute top-0 inset-x-0 z-20 h-[70px] flex items-center justify-between px-5 sm:px-9"
+        style={{ background: 'rgba(5,7,10,.78)', borderBottom: '1px solid rgba(255,70,85,.45)', backdropFilter: 'blur(12px)' }}>
+        <nav className="flex items-center gap-1 sm:gap-4 h-full">
           <button onClick={() => setPanel('none')} className="h-full px-3 sm:px-5 font-display text-xs sm:text-sm font-bold tracking-[.16em] text-white border-b-[3px] border-[#ff4655] bg-[#ff4655]/10">JOUER</button>
           <button onClick={() => setPanel('arsenal')} className="h-full px-2 sm:px-4 font-display text-xs sm:text-sm tracking-[.12em] text-white/65 hover:text-white">COLLECTION</button>
           <button onClick={() => setPanel('career')} className="h-full px-2 sm:px-4 font-display text-xs sm:text-sm tracking-[.12em] text-white/65 hover:text-white">CARRIÈRE</button>
           <button onClick={() => { sfx.uiClick(); onShop(); }} className="h-full px-2 sm:px-4 font-display text-xs sm:text-sm tracking-[.12em] text-white/65 hover:text-white">BOUTIQUE</button>
-          <button onClick={() => setPanel('controls')} className="hidden sm:block h-full px-2 sm:px-4 font-display text-xs sm:text-sm tracking-[.12em] text-white/65 hover:text-white">APPRENDRE</button>
+          <button onClick={() => setPanel('controls')} className="hidden md:block h-full px-2 sm:px-4 font-display text-xs sm:text-sm tracking-[.12em] text-white/65 hover:text-white">APPRENDRE</button>
         </nav>
         <div className="flex items-center gap-2 sm:gap-3">
           <button aria-label="Paramètres" onClick={() => setPanel('settings')} className="w-9 h-9 flex items-center justify-center bg-[#ff4655] text-white hover:brightness-125"><SlidersHorizontal size={17} /></button>
@@ -495,65 +496,73 @@ export default function MainMenu({ settings, onPlay, onSettings, onOnline, onSho
         </div>
       </header>
 
-      <main className="relative z-10 h-full flex flex-col justify-center px-5 sm:px-10 lg:px-14 pt-20 pb-16">
-        <div className="w-full lg:w-[min(790px,68vw)]">
-          <div className="flex items-center gap-3 mb-5 anim-reveal">
+      <main className="relative z-10 h-full flex items-center px-5 sm:px-9 lg:px-14 pt-[76px] pb-[72px]">
+        <div className="w-full max-w-[690px]">
+          <div className="flex items-center gap-3 mb-4 anim-reveal">
             <span className="w-9 h-[3px] bg-[#ff4655]" />
-            <span className="font-display text-[10px] sm:text-xs font-bold tracking-[.35em] text-[#ff6676]">VALENCE // OPÉRATIONS EN COURS</span>
+            <span className="font-display text-[10px] sm:text-xs font-bold tracking-[.34em] text-[#ff6676]">VALENCE // ZONE DE DÉPLOIEMENT</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-            {cards.map((card, index) => (
-              <button key={card.k} onMouseEnter={() => sfx.uiHover()}
-                onClick={() => { sfx.init(); sfx.uiClick(); if (card.k === 'quick') onPlay(); else if (card.k === 'custom') setPanel('deploy'); else onOnline(); }}
-                className="group relative h-[230px] sm:h-[260px] lg:h-[300px] overflow-hidden text-left transition-all duration-200 hover:-translate-y-1 hover:brightness-125"
-                style={{ background: card.image, border: index === 0 ? '2px solid #ff1748' : '1px solid rgba(255,255,255,.42)', boxShadow: index === 0 ? '0 0 24px rgba(255,20,65,.2), inset 0 0 25px rgba(255,20,65,.12)' : 'none' }}>
-                <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.07) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-                <div className="absolute inset-0" style={{ background: index === 0 ? 'linear-gradient(0deg, rgba(100,0,25,.95), transparent 72%)' : 'linear-gradient(0deg, rgba(0,0,0,.92), rgba(0,0,0,.08) 80%)' }} />
-                <div className="absolute top-3 left-3 font-display text-[9px] tracking-[.25em] text-white/55">0{index + 1} / MODE DE JEU</div>
-                <div className="absolute bottom-0 inset-x-0 p-4 sm:p-3 lg:p-4">
-                  <div className="font-display font-bold text-lg sm:text-base lg:text-xl tracking-[.08em] text-white leading-tight">{card.title}</div>
-                  <div className="font-display text-[10px] sm:text-[9px] lg:text-[10px] tracking-wide text-white/65 mt-1 leading-snug">{card.desc}</div>
-                </div>
-                {index === 0 && <div className="absolute top-0 right-0 px-2 py-1 bg-[#ff1748] font-display text-[9px] font-bold tracking-widest">RECOMMANDÉ</div>}
+          <h1 className="font-display font-bold leading-none tracking-[.08em] text-white mb-5" style={{ fontSize: 'clamp(34px, 5vw, 58px)', textShadow: '0 4px 28px rgba(0,0,0,.8)' }}>
+            CHOISISSEZ <span className="text-[#ff4655]">VOTRE MODE</span>
+          </h1>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            {modes.map((mode) => (
+              <button key={mode.id} onMouseEnter={() => sfx.uiHover()}
+                onClick={() => { sfx.init(); sfx.uiClick(); mode.action(); }}
+                className="group relative h-[190px] sm:h-[220px] overflow-hidden text-left transition-all duration-200 hover:-translate-y-1 hover:brightness-125"
+                style={{ background: mode.featured ? 'linear-gradient(145deg, rgba(255,25,67,.94), rgba(80,5,25,.96))' : 'linear-gradient(145deg, rgba(40,45,50,.78), rgba(5,8,12,.94))', border: mode.featured ? '2px solid #ff1748' : '1px solid rgba(255,255,255,.42)', boxShadow: mode.featured ? '0 0 25px rgba(255,20,65,.22), inset 0 0 30px rgba(255,20,65,.15)' : '0 8px 28px rgba(0,0,0,.25)' }}>
+                <div className="absolute inset-0 opacity-35" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.09) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.09) 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(0deg, rgba(0,0,0,.9), transparent 78%)' }} />
+                <span className="absolute top-3 left-3 font-display text-[9px] tracking-[.25em] text-white/60">{mode.number} / MODE</span>
+                <span className="absolute top-3 right-3"><ChevronRight size={17} className="text-white/65 transition-transform group-hover:translate-x-1" /></span>
+                <span className="absolute bottom-0 inset-x-0 p-3">
+                  <span className="block font-display font-bold text-base sm:text-[15px] lg:text-lg tracking-[.07em] text-white leading-tight">{mode.title}</span>
+                  <span className="block font-display text-[9px] tracking-wide text-white/65 mt-1 leading-snug">{mode.subtitle}</span>
+                </span>
+                {mode.featured && <span className="absolute top-0 right-0 px-2 py-1 bg-[#ff1748] font-display text-[8px] font-bold tracking-widest">RECOMMANDÉ</span>}
               </button>
             ))}
           </div>
 
-          <section className="mt-6 sm:mt-7 max-w-[590px] border border-white/20 bg-black/55 backdrop-blur-md">
+          <section className="mt-5 max-w-[610px] border border-white/20 bg-black/60 backdrop-blur-md">
             <div className="flex items-center justify-between px-3 py-2 border-b border-white/15">
-              <span className="font-display text-[11px] sm:text-xs font-bold tracking-[.2em]">OBJECTIFS DE COMBAT</span>
-              <span className="font-display text-[9px] tracking-widest text-[#ff6676]">À ACCOMPLIR</span>
+              <span className="font-display text-[11px] sm:text-xs font-bold tracking-[.2em]">MISSIONS DU JOUR</span>
+              <span className="font-display text-[9px] tracking-widest text-[#ff6676]">2 / 3 TERMINÉES</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2">
-              <button onClick={() => { sfx.uiClick(); onPlay(); }} className="text-left px-3 py-3 border-b sm:border-b-0 sm:border-r border-white/10 hover:bg-white/5">
-                <div className="font-display text-[11px] tracking-wide text-white/85">Lancez un match rapide</div>
-                <div className="font-display text-[9px] tracking-wider text-white/40 mt-1">Entrez directement dans l'action</div>
-                <div className="mt-2 h-1 bg-white/10"><div className="h-full w-1/3 bg-[#ff4655]" /></div>
-              </button>
-              <button onClick={() => { sfx.uiClick(); setPanel('deploy'); }} className="text-left px-3 py-3 hover:bg-white/5">
-                <div className="font-display text-[11px] tracking-wide text-white/85">Préparez votre déploiement</div>
-                <div className="font-display text-[9px] tracking-wider text-white/40 mt-1">{map.name} · difficulté {diff.name}</div>
-                <div className="mt-2 h-1 bg-white/10"><div className="h-full w-2/3 bg-[#ff4655]" /></div>
-              </button>
-            </div>
+            <button onClick={() => { sfx.uiClick(); onPlay(); }} className="w-full text-left px-3 py-2.5 border-b border-white/10 hover:bg-white/5">
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-display text-[10px] sm:text-[11px] tracking-wide text-white/85">Terminer un match rapide</span>
+                <span className="font-mono-t text-[9px] text-white/50">1 / 2</span>
+              </div>
+              <div className="mt-2 h-1 bg-white/10"><div className="h-full w-1/2 bg-[#ff4655]" /></div>
+            </button>
+            <button onClick={() => { sfx.uiClick(); setPanel('deploy'); }} className="w-full text-left px-3 py-2.5 hover:bg-white/5">
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-display text-[10px] sm:text-[11px] tracking-wide text-white/85">Préparer un déploiement sur {map.name}</span>
+                <span className="font-mono-t text-[9px] text-white/50">1 / 1</span>
+              </div>
+              <div className="mt-2 h-1 bg-white/10"><div className="h-full w-full bg-[#ff4655]" /></div>
+            </button>
           </section>
 
-          <div className="flex flex-wrap items-center gap-2 mt-4">
+          <div className="flex flex-wrap items-center gap-2 mt-3">
             {[
               ['ARSENAL', 'arsenal'], ['PARAMÈTRES', 'settings'], ['COMMANDES', 'controls'], ['TACTILE', 'pad'],
             ].map(([label, key]) => (
               <button key={key} onClick={() => { sfx.uiClick(); setPanel(key as Panel); }}
-                className="px-3 py-2 font-display text-[9px] sm:text-[10px] font-bold tracking-[.18em] text-white/55 hover:text-white border border-white/15 bg-black/30 transition-colors">{label}</button>
+                className="px-3 py-2 font-display text-[9px] sm:text-[10px] font-bold tracking-[.18em] text-white/55 hover:text-white border border-white/15 bg-black/35 transition-colors">{label}</button>
             ))}
           </div>
         </div>
       </main>
 
-      <footer className="absolute bottom-0 inset-x-0 z-10 flex items-center justify-between gap-3 px-5 sm:px-10 py-3"
-        style={{ borderTop: '1px solid rgba(255,255,255,.1)', background: 'rgba(5,7,10,.72)', backdropFilter: 'blur(10px)' }}>
+      <footer className="absolute bottom-0 inset-x-0 z-10 flex items-center justify-between gap-3 px-5 sm:px-9 py-3"
+        style={{ borderTop: '1px solid rgba(255,255,255,.1)', background: 'rgba(5,7,10,.78)', backdropFilter: 'blur(10px)' }}>
         <div className="flex items-center gap-2 font-display text-[9px] sm:text-[10px] tracking-[.16em] text-white/45">
           <Trophy size={12} className="text-[#ffd25d]" /> OBJECTIF : {settings.matchWins} MANCHES
           <span className="text-[#ff4655]">//</span><MapIcon size={12} /> {map.name}
+          <span className="hidden sm:inline text-[#ff4655]">//</span><Gauge size={12} className="hidden sm:inline" /> <span className="hidden sm:inline">{diff.name}</span>
         </div>
         <div className="flex items-center gap-3 font-display text-[9px] sm:text-[10px] tracking-[.15em]">
           <span className="text-[#4df3d3]">NIV. {profile.level}</span>
