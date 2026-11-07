@@ -8,7 +8,6 @@ import { WEAPONS, SHOP_ORDER, type WeaponCat } from '../game/weapons';
 import { sfx } from '../game/audio';
 import { CrosshairView } from './HUD';
 import PadEditor from './PadEditor';
-import { isTouchDevice } from './TouchControls';
 import {
   Play, Keyboard, SlidersHorizontal, Crosshair, Volume2, Gauge, X, Swords,
   Map as MapIcon, Eye, Monitor, Trophy, RotateCcw, Check, ChevronRight, Coins, Flame, Smartphone, Wifi, Sparkles,
