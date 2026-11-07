@@ -9,7 +9,7 @@ import { WEAPONS, SHOP_ORDER, SHIELD_LIGHT, SHIELD_HEAVY, isPrimary } from '../g
 import { sfx } from '../game/audio';
 import {
   Shield, ShieldHalf, Heart, Coins, Crosshair as CrossIcon, Skull,
-  RotateCw, Footprints, Zap, Play, LogOut, Gauge, Target,
+  RotateCw, Zap, Play, LogOut, Gauge,
   Bomb, ShoppingCart, Swords, ShieldCheck, Repeat, Hand, X, Star, TrendingUp,
 } from 'lucide-react';
 
