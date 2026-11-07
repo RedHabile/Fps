@@ -173,17 +173,17 @@ export class ViewModel {
   /** distance de port par catégorie : les armes courtes sont tenues plus près
    *  pour rester bien visibles à l'écran (comme dans un vrai FPS). */
   private static readonly HOLD: Record<string, { z: number; x: number; y: number }> = {
-    'Pistolet':      { z: -0.56, x: 0.226, y: -0.168 },
-    'Fusil à pompe': { z: -0.62, x: 0.244, y: -0.180 },
-    'PM':            { z: -0.62, x: 0.242, y: -0.178 },
-    'Fusil':         { z: -0.68, x: 0.258, y: -0.188 },
-    'Mitrailleuse':  { z: -0.70, x: 0.264, y: -0.192 },
-    'Sniper':        { z: -0.74, x: 0.266, y: -0.186 },
+    'Pistolet':      { z: -0.56, x: 0.238, y: -0.192 },
+    'Fusil à pompe': { z: -0.62, x: 0.252, y: -0.205 },
+    'PM':            { z: -0.62, x: 0.252, y: -0.202 },
+    'Fusil':         { z: -0.68, x: 0.266, y: -0.210 },
+    'Mitrailleuse':  { z: -0.70, x: 0.272, y: -0.214 },
+    'Sniper':        { z: -0.74, x: 0.276, y: -0.210 },
   };
   private showHands = true;
   /** Échelle du viewmodel. Rendu par une caméra dédiée à 55°, donc
    *  l'arme peut rester à distance confortable sans déformation. */
-  private static readonly SCALE = 0.50;
+  private static readonly SCALE = 0.56;
 
   constructor() {
     this.scene.add(this.group);
@@ -455,7 +455,7 @@ export class ViewModel {
     const k = 1 - adsK;
     this.rig.rotation.set(0.012 * k, 0.085 * k, 0.028 * k);
     this.light.intensity = 1.1 * (1 - adsK * 0.5);
-    if (this.hands) this.hands.visible = this.showHands && adsK < 0.92;
+    if (this.hands) this.hands.visible = this.showHands && adsK < 0.995;
   }
 
   muzzleWorld(out: THREE.Vector3): THREE.Vector3 {
