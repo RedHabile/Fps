@@ -120,13 +120,13 @@ function DamageIndicator() {
 // ————— Killfeed —————
 function KillFeed() {
   const s = useSnap();
-  const items = s.feed.filter((f) => Date.now() - f.ts < 6500);
+  const items = s.feed.filter((f) => Date.now() - f.ts < 5200).slice(-3);
   return (
-    <div className="absolute top-24 right-6 z-20 flex flex-col gap-1.5 items-end pointer-events-none">
+    <div className="absolute top-5 right-5 z-20 flex flex-col gap-1 items-end pointer-events-none">
       {items.map((f) => (
-        <div key={f.id} className="anim-feed flex items-center gap-2 px-3 py-1.5 clip-tag"
+        <div key={f.id} className="anim-feed flex items-center gap-2 px-2.5 py-1 clip-tag"
           style={{ background: f.mine ? 'rgba(15,25,35,.88)' : 'rgba(15,25,35,.6)', border: `1px solid ${f.mine ? '#ff465566' : '#ffffff22'}` }}>
-          <span className="font-display font-bold text-sm tracking-wider" style={{ color: f.killer === 'VOUS' ? '#4df3d3' : '#ff6d7a' }}>{f.killer}</span>
+          <span className="font-display font-bold text-xs tracking-wider" style={{ color: f.killer === 'VOUS' ? '#4df3d3' : '#ff6d7a' }}>{f.killer}</span>
           <CrossIcon size={13} className="text-white/70" />
           {f.headshot && <span className="font-display text-[10px] font-bold text-[#ffd25d] border border-[#ffd25d66] px-1">TÊTE</span>}
           <span className="font-display font-bold text-sm tracking-wider" style={{ color: f.victim === 'VOUS' ? '#4df3d3' : '#ece8e1' }}>{f.victim}</span>
@@ -140,8 +140,8 @@ function KillToast() {
   const s = useSnap();
   if (!s.lastKill || Date.now() - s.lastKill.ts > 2200) return null;
   return (
-    <div className="absolute left-1/2 bottom-[27%] -translate-x-1/2 z-20 text-center pointer-events-none anim-reveal">
-      <div className="font-display font-bold text-2xl tracking-[.25em] text-[#ff4655]" style={{ textShadow: '0 0 22px rgba(255,70,85,.8)' }}>
+    <div className="absolute left-1/2 bottom-[22%] -translate-x-1/2 z-20 text-center pointer-events-none anim-reveal">
+      <div className="font-display font-bold text-xl tracking-[.18em] text-[#ff4655]" style={{ textShadow: '0 0 22px rgba(255,70,85,.8)' }}>
         {s.lastKill.name} ÉLIMINÉ
       </div>
       <div className="font-display text-sm tracking-[.2em] text-[#ffd25d]">
@@ -182,7 +182,7 @@ function TopBar() {
           return <div key={i} className="w-2 h-2 rotate-45" style={{ background: filled ? (mine ? '#4df3d3' : '#ff4655') : 'rgba(255,255,255,.18)', border: '1px solid rgba(255,255,255,.2)' }} />;
         })}
       </div>
-      <div className="flex items-center gap-4 mt-2 px-3 py-1 clip-tag" style={{ background: 'rgba(10,18,26,.74)' }}>
+      <div className="hidden" style={{ background: 'rgba(10,18,26,.74)' }}>
         <span className="flex items-center gap-1.5">
           <span className="font-display text-[9px] tracking-[.25em] text-[#4df3d3]/70 font-semibold">ÉQUIPE</span>
           {Array.from({ length: s.alliesTotal }).map((_, i) => (
@@ -213,7 +213,7 @@ function TopBar() {
 function Minimap({ touch }: { touch: boolean }) {
   const s = useSnap();
   const ref = useRef<HTMLCanvasElement>(null);
-  const SIZE = touch ? 118 : 196;
+  const SIZE = touch ? 104 : 156;
   const RANGE = 84;
   const map = getMap(s.mapId);
 
@@ -323,7 +323,7 @@ function Vitals({ touch }: { touch: boolean }) {
   return (
     <div className={`absolute z-20 pointer-events-none ${touch ? 'left-3' : 'bottom-6 left-6'}`}
       style={touch ? { top: 136 } : undefined}>
-      <div className={`clip-card ${touch ? 'px-3 py-2 min-w-[160px]' : 'px-4 py-3 min-w-[240px]'}`} style={{ background: 'rgba(10,18,26,.85)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,.08)' }}>
+      <div className={`clip-card ${touch ? 'px-3 py-2 min-w-[160px]' : 'px-4 py-3 min-w-[184px]'}`} style={{ background: 'rgba(10,18,26,.85)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,.08)' }}>
         {!touch && (
           <div className="flex items-center gap-2 mb-1.5">
             <Heart size={14} className={low ? 'text-[#ff4655]' : 'text-[#4df3d3]'} />
@@ -331,7 +331,7 @@ function Vitals({ touch }: { touch: boolean }) {
           </div>
         )}
         <div className="flex items-center gap-3">
-          <span className={`font-display font-bold leading-none ${touch ? 'text-2xl' : 'text-4xl'} ${low ? 'text-[#ff4655]' : 'text-[#ece8e1]'}`}
+          <span className={`font-display font-bold leading-none ${touch ? 'text-2xl' : 'text-3xl'} ${low ? 'text-[#ff4655]' : 'text-[#ece8e1]'}`}
             style={low ? { animation: 'pulseRed 1.1s infinite' } : {}}>{s.hp}</span>
           <div className="flex-1">
             <div className="h-2.5 w-full" style={{ background: 'rgba(255,255,255,.1)', clipPath: 'polygon(0 0, 100% 0, calc(100% - 5px) 100%, 0 100%)' }}>
@@ -375,7 +375,7 @@ function WeaponPanel({ touch }: { touch: boolean }) {
           <span className={`font-display font-bold text-[#ffd25d] tracking-widest ${touch ? 'text-xs' : ''}`}>{s.credits}</span>
         </div>
       </div>
-      <div className={`flex justify-end gap-2 mt-2 ${touch ? 'hidden' : ''}`}>
+      <div className="hidden">
         {s.owned.map((w) => (
           <div key={w} className={`font-display text-[10px] font-bold tracking-[.15em] px-2 py-0.5 clip-tag ${w === s.weapon ? 'text-[#4df3d3]' : 'text-white/40'}`}
             style={{ background: 'rgba(10,18,26,.72)', border: `1px solid ${w === s.weapon ? '#4df3d355' : '#ffffff15'}` }}>
@@ -394,10 +394,10 @@ function Banner() {
   const b = s.banner;
   const col = b.kind === 'win' ? '#4df3d3' : b.kind === 'lose' ? '#ff4655' : '#ece8e1';
   return (
-    <div key={b.key} className="absolute inset-x-0 top-[29%] z-20 flex flex-col items-center pointer-events-none">
-      <div className="anim-banner relative px-16 py-4 text-center overflow-hidden"
+    <div key={b.key} className="absolute inset-x-0 top-[25%] z-20 flex flex-col items-center pointer-events-none">
+      <div className="anim-banner relative px-8 py-3 text-center overflow-hidden"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(10,18,26,.9) 18%, rgba(10,18,26,.9) 82%, transparent)', borderTop: `2px solid ${col}`, borderBottom: `2px solid ${col}` }}>
-        <div className="anim-banner-txt font-display font-bold text-5xl tracking-[.2em]" style={{ color: col, textShadow: `0 0 34px ${col}88` }}>{b.title}</div>
+        <div className="anim-banner-txt font-display font-bold text-3xl tracking-[.16em]" style={{ color: col, textShadow: `0 0 34px ${col}88` }}>{b.title}</div>
         {b.sub && <div className="anim-banner-txt font-display text-base tracking-[.3em] text-white/75 mt-1">{b.sub}</div>}
       </div>
     </div>
@@ -995,12 +995,10 @@ export default function HUD({ game, onQuit, touch = false }: { game: Game | null
       <WeaponPanel touch={touch} />
       <Banner />
       <Abilities touch={touch} />
-      <AbilityToast />
       <FlashOverlay />
       <SpikeHud touch={touch} />
       <Halftime />
       <Spectating />
-      <Hints touch={touch} />
       <ShopButton touch={touch} />
       <BuyMenu game={game} />
       <Scoreboard />
