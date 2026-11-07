@@ -437,7 +437,6 @@ export default function MainMenu({ settings, onPlay, onSettings, onOnline, onSho
   profile: { coins: number; agent: string; level: number };
 }) {
   const [panel, setPanel] = useState<Panel>('none');
-  const [touchDev] = useState(isTouchDevice);
   const set = (s: Settings) => { onSettings(s); saveSettings(s); };
   const map = getMap(settings.mapId);
   const diff = DIFFICULTIES.find((d) => d.v === settings.difficulty) ?? DIFFICULTIES[1];
@@ -475,7 +474,7 @@ export default function MainMenu({ settings, onPlay, onSettings, onOnline, onSho
         </p>
 
         <div className="anim-reveal grid grid-cols-1 sm:grid-cols-2 gap-3 w-[min(560px,90vw)]" style={{ animationDelay: '.3s' }}>
-          {items.map((it, index) => (
+          {items.map((it) => (
             <button key={it.k} onMouseEnter={() => sfx.uiHover()}
               onClick={() => { sfx.init(); sfx.uiClick(); if (it.k === 'play') onPlay(); else if (it.k === 'online') onOnline(); else if (it.k === 'shop') onShop(); else setPanel(it.k as Panel); }}
               className={`group clip-btn flex items-center gap-3 px-5 py-4 min-h-[76px] transition-all text-left hover:-translate-y-0.5 hover:brightness-125 min-h-[76px]`}
