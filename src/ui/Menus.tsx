@@ -443,14 +443,10 @@ export default function MainMenu({ settings, onPlay, onSettings, onOnline, onSho
   const diff = DIFFICULTIES.find((d) => d.v === settings.difficulty) ?? DIFFICULTIES[1];
 
   const items: { k: Panel | 'play'; t: string; s: string; i: React.ReactNode; red?: boolean }[] = [
-    { k: 'play', t: 'JOUER', s: 'Attaque / défense 5 contre 5 avec Spike', i: <Play size={18} fill="currentColor" />, red: true },
-    { k: 'shop', t: 'BOUTIQUE', s: `${profile.coins} crédits · agents et livrées`, i: <Sparkles size={18} /> },
-    { k: 'online', t: 'JOUER EN LIGNE', s: 'Code à 4 chiffres · jusqu\'à 5 joueurs', i: <Wifi size={18} /> },
-    { k: 'deploy', t: 'CARTES & DIFFICULTÉ', s: `${map.name} · ${diff.name}`, i: <MapIcon size={18} /> },
-    { k: 'arsenal', t: 'ARSENAL', s: '12 armes · statistiques détaillées', i: <Crosshair size={18} /> },
-    { k: 'settings', t: 'PARAMÈTRES', s: 'Visée, réticule, vidéo, audio', i: <SlidersHorizontal size={18} /> },
-    { k: 'pad', t: 'BOUTONS TACTILES', s: touchDev ? 'Détecté — personnalisez vos commandes' : 'Déplacer et redimensionner les commandes', i: <Smartphone size={18} /> },
-    { k: 'controls', t: 'COMMANDES', s: 'Clavier et souris', i: <Keyboard size={18} /> },
+    { k: 'play', t: 'JOUER', s: 'Lancer une partie contre les agents', i: <Play size={20} fill="currentColor" />, red: true },
+    { k: 'online', t: 'EN LIGNE', s: 'Rejoindre ou héberger une partie', i: <Wifi size={20} /> },
+    { k: 'shop', t: 'BOUTIQUE', s: `${profile.coins} crédits · agents et livrées`, i: <Sparkles size={20} /> },
+    { k: 'deploy', t: 'PRÉPARER', s: `${map.name} · difficulté ${diff.name}`, i: <MapIcon size={20} /> },
   ];
 
   return (
@@ -465,7 +461,7 @@ export default function MainMenu({ settings, onPlay, onSettings, onOnline, onSho
         <div className="hazard absolute -left-40 top-[74%] w-[130%] h-[2px] opacity-25" style={{ animation: 'diagSlide 13s ease-in-out infinite alternate-reverse' }} />
       </div>
 
-      <div className="relative z-10 h-full flex flex-col justify-center max-w-5xl"
+      <div className="relative z-10 h-full flex flex-col justify-center max-w-6xl"
         style={{ paddingLeft: 'clamp(28px, 6vw, 86px)', paddingRight: '24px' }}>
         <div className="anim-reveal flex items-center gap-3 mb-2" style={{ animationDelay: '.05s' }}>
           <div className="w-10 h-[3px] bg-[#ff4655]" />
@@ -478,11 +474,11 @@ export default function MainMenu({ settings, onPlay, onSettings, onOnline, onSho
           4 CARTES · 12 ARMES · SPIKE · EN LIGNE
         </p>
 
-        <div className="anim-reveal grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-[min(640px,90vw)]" style={{ animationDelay: '.3s' }}>
+        <div className="anim-reveal grid grid-cols-1 sm:grid-cols-2 gap-3 w-[min(560px,90vw)]" style={{ animationDelay: '.3s' }}>
           {items.map((it, index) => (
             <button key={it.k} onMouseEnter={() => sfx.uiHover()}
               onClick={() => { sfx.init(); sfx.uiClick(); if (it.k === 'play') onPlay(); else if (it.k === 'online') onOnline(); else if (it.k === 'shop') onShop(); else setPanel(it.k as Panel); }}
-              className={`group clip-btn flex items-center gap-3 px-4 py-3 min-h-[66px] transition-all text-left hover:-translate-y-0.5 hover:brightness-125 ${index === 0 ? 'sm:col-span-2 min-h-[76px]' : ''}`}
+              className={`group clip-btn flex items-center gap-3 px-5 py-4 min-h-[76px] transition-all text-left hover:-translate-y-0.5 hover:brightness-125 min-h-[76px]`}
               style={{
                 background: it.red ? '#ff4655' : 'rgba(236,232,225,.055)',
                 border: `1px solid ${it.red ? '#ff4655' : 'rgba(236,232,225,.16)'}`,
@@ -493,6 +489,18 @@ export default function MainMenu({ settings, onPlay, onSettings, onOnline, onSho
                 <span className={`block font-display text-[10px] tracking-[.14em] truncate ${it.red ? 'text-white/75' : 'text-white/35'}`}>{it.s}</span>
               </span>
               <ChevronRight size={16} className={`shrink-0 transition-transform group-hover:translate-x-1 ${it.red ? 'text-white/80' : 'text-white/30'}`} />
+            </button>
+          ))}
+        </div>
+        <div className="anim-reveal flex flex-wrap items-center gap-2 mt-4" style={{ animationDelay: '.42s' }}>
+          {[
+            ['ARSENAL', 'arsenal'], ['PARAMÈTRES', 'settings'],
+            ['COMMANDES', 'controls'], ['TACTILE', 'pad'],
+          ].map(([label, key]) => (
+            <button key={key} onClick={() => { sfx.uiClick(); setPanel(key as Panel); }}
+              className="clip-tag px-3 py-2 font-display text-[10px] font-bold tracking-[.2em] text-white/55 hover:text-white transition-colors"
+              style={{ background: 'rgba(236,232,225,.055)', border: '1px solid rgba(236,232,225,.13)' }}>
+              {label}
             </button>
           ))}
         </div>
