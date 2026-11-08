@@ -1,6 +1,12 @@
 export type WeaponId = 'p12' | 'r45' | 'spectre' | 'viper' | 'bulldog' | 'phantom';
 export type ArmorId = 'none' | 'light' | 'heavy';
 export type GameMode = 'sd' | 'tdm';
+export type Difficulty = 'easy' | 'normal' | 'hard';
+export const DIFFICULTIES: { id: Difficulty; name: string; tagline: string }[] = [
+  { id: 'easy', name: 'FACILE', tagline: 'IA moins réactive' },
+  { id: 'normal', name: 'NORMAL', tagline: 'ÉQUILIBRÉ' },
+  { id: 'hard', name: 'DIFFICILE', tagline: 'IA rapide et précise' },
+];
 export type WeaponSlot = 'sidearm' | 'primary';
 export type GrenadeKind = 'frag' | 'flash';
 
