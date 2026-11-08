@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ARMORS, SKINS, TDM_DURATION, TDM_KILL_TARGET, TDM_RESPAWN_DELAY, WEAPONS, isPistolWeapon, slotForWeapon, type ArmorId, type GameMode, type GrenadeKind, type MapId, type MatchResult, type Skin, type SkinId, type Team, type Weapon, type WeaponSlot, type WeaponId } from './data';
+import { ARMORS, SKINS, TDM_DURATION, TDM_KILL_TARGET, TDM_RESPAWN_DELAY, WEAPONS, isPistolWeapon, slotForWeapon, type ArmorId, type Difficulty, type GameMode, type GrenadeKind, type MapId, type MatchResult, type Skin, type SkinId, type Team, type Weapon, type WeaponSlot, type WeaponId } from './data';
 import { type NetworkMessage, type RoomConnection } from './network';
 import { blocked, buildWorld, findPath, lineClear, obstaclesForMap, SITES, type Obstacle } from './world';
 import { buildOperator, setOperatorWeapon, type OperatorRig } from './character';
@@ -25,6 +25,7 @@ interface Actor extends OperatorRig {
   path: { x: number; z: number }[];
   planIn: number;
   shootIn: number;
+  grenadeIn: number;
   reaction: number;
   targetId: string;
   strafe: number;
@@ -164,6 +165,7 @@ interface EngineOptions {
   skin: Skin;
   mapId: MapId;
   mode: GameMode;
+  difficulty: Difficulty;
   room: RoomConnection | null;
   sound: boolean;
   onHud: (hud: GameHUD) => void;
@@ -215,7 +217,7 @@ function makeActor(id: string, team: Team, bot: boolean, index: number, displayT
   return {
     id, team, bot, index, x: 0, z: 0, targetX: 0, targetZ: 0, yaw: 0,
     health: 100, armor: 0, armorId: 'none', alive: true, ...rig,
-    path: [], planIn: 0, shootIn: 0.5, reaction: 0, targetId: '', strafe: 1,
+    path: [], planIn: 0, shootIn: 0.5, grenadeIn: 5 + Math.random() * 5, reaction: 0, targetId: '', strafe: 1,
     strafeIn: 0, walk: Math.random() * 4, moving: false,
     shotsLeft: sidearm.magazine, reloadFor: 0, reloadTotal: 1.6, fireKick: 0,
     weaponId: 'p12', skinId: 'recruit',
@@ -811,12 +813,12 @@ export class BreachEngine {
           if (dist > 20) continue;
           if (!lineClear(pos.x, pos.z, target.x, target.z, 0, this.obstacles)) continue;
           const strength = clamp(1.25 - dist / 20, 0.25, 1.25);
-          if (target.id === this.localId) this.flashWhite = Math.max(this.flashWhite, strength);
-          else target.blindFor = Math.max(target.blindFor, strength * 2.4);
+          if (target.id === this.localId) this.flashWhite = 3;
+          else target.blindFor = Math.max(target.blindFor, 3);
         }
         const selfDist = Math.hypot(this.player.x - pos.x, this.player.z - pos.z);
         if (this.player.team === grenade.team && selfDist < 6 && lineClear(pos.x, pos.z, this.player.x, this.player.z, 0, this.obstacles)) {
-          this.flashWhite = Math.max(this.flashWhite, 0.4);
+          this.flashWhite = 3;
         }
       }
     }
@@ -994,7 +996,7 @@ export class BreachEngine {
       this.gunKick = Math.max(0, this.gunKick - dt * 5);
       this.shake = Math.max(0, this.shake - dt * 2.4);
       this.muzzleFlash.visible = this.flashFor > 0;
-      this.flashWhite = Math.max(0, this.flashWhite - dt * 0.7);
+      this.flashWhite = Math.max(0, this.flashWhite - dt);
 
       if (this.phase === 'buy' && this.isHost) {
         if (this.buyWarmup > 0) this.buyWarmup--;
@@ -1126,6 +1128,7 @@ export class BreachEngine {
       if (!actor.bot || !actor.alive) continue;
       actor.planIn -= dt;
       actor.shootIn -= dt;
+      actor.grenadeIn -= dt;
       actor.strafeIn -= dt;
       if (actor.reloadFor > 0) {
         actor.reloadFor = Math.max(0, actor.reloadFor - dt);
@@ -1150,11 +1153,12 @@ export class BreachEngine {
         const { target, dist } = visible;
         if (actor.targetId !== target.id) {
           actor.targetId = target.id;
-          actor.reaction = 0.4 + Math.random() * 0.5 + actor.blindFor;
+          const reactionScale = this.options.difficulty === 'easy' ? 1.8 : this.options.difficulty === 'hard' ? 0.55 : 1;
+          actor.reaction = (0.4 + Math.random() * 0.5) * reactionScale + actor.blindFor;
         }
         actor.reaction -= dt;
         const desired = angleTo(target.x - actor.x, target.z - actor.z);
-        actor.yaw += angleDiff(desired, actor.yaw) * Math.min(1, dt * (actor.blindFor > 0 ? 1.5 : 5));
+        actor.yaw += angleDiff(desired, actor.yaw) * Math.min(1, dt * (actor.blindFor > 0 ? 1.5 : this.options.difficulty === 'easy' ? 2.8 : this.options.difficulty === 'hard' ? 8 : 5));
         if (actor.strafeIn <= 0) {
           actor.strafe = Math.random() > 0.5 ? 1 : -1;
           actor.strafeIn = 0.8 + Math.random() * 1.5;
@@ -1166,9 +1170,16 @@ export class BreachEngine {
         const beforeZ = actor.z;
         this.moveActor(actor, dx, dz);
         actor.moving = Math.hypot(actor.x - beforeX, actor.z - beforeZ) > 0.001;
+        if (actor.grenadeIn <= 0 && dist >= 5 && dist <= 17 && actor.blindFor <= 0 && Math.random() < (this.options.difficulty === 'easy' ? 0.018 : this.options.difficulty === 'hard' ? 0.075 : 0.045)) {
+          const kind: GrenadeKind = dist > 10 && actor.flashLeft > 0 ? 'flash' : 'frag';
+          const aim = new THREE.Vector3(target.x - actor.x, 0.18, target.z - actor.z).normalize();
+          this.spawnGrenade(actor, kind, aim);
+          actor.grenadeIn = (this.options.difficulty === 'easy' ? 18 : this.options.difficulty === 'hard' ? 9 : 13) + Math.random() * 5;
+        }
         if (actor.reaction <= 0 && actor.shootIn <= 0 && actor.reloadFor <= 0 && actor.blindFor <= 0) {
           const weapon = WEAPONS.find((entry) => entry.id === actor.weaponId) ?? WEAPONS[0];
-          actor.shootIn = Math.max(0.3, weapon.rate * 3.2) + Math.random() * 0.3;
+          const aimScale = this.options.difficulty === 'easy' ? 1.8 : this.options.difficulty === 'hard' ? 0.78 : 1;
+          actor.shootIn = (Math.max(0.3, weapon.rate * 3.2) + Math.random() * 0.3) * aimScale;
           this.botFire(actor, target, dist);
         }
       } else if (this.isTdm) {
