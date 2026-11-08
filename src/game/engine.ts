@@ -185,6 +185,14 @@ interface Tracer {
   life: number;
 }
 
+interface BlastEffect {
+  mesh: THREE.Mesh;
+  ring: THREE.Mesh;
+  life: number;
+  maxLife: number;
+  size: number;
+}
+
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 const distance = (a: { x: number; z: number }, b: { x: number; z: number }) => Math.hypot(a.x - b.x, a.z - b.z);
 const angleTo = (x: number, z: number) => Math.atan2(-x, -z);
@@ -309,6 +317,9 @@ export class BreachEngine {
   private roundWinner: Team | null = null;
   private particles: Particle[] = [];
   private tracers: Tracer[] = [];
+  private blastEffects: BlastEffect[] = [];
+  private grenadeThrowFor = 0;
+  private swapFor = 0;
   private particleGeometry = new THREE.SphereGeometry(0.055, 5, 4);
   private sparkMaterial = new THREE.MeshBasicMaterial({ color: 0xffd59c });
   private hitMaterial = new THREE.MeshBasicMaterial({ color: 0x8cebd9 });
@@ -569,6 +580,7 @@ export class BreachEngine {
     this.reloadStage = 0;
     setOperatorWeapon(player, weapon.id, this.options.skin);
     if (announce) {
+      this.swapFor = 0.42;
       this.ensureAudio();
       this.sound('swap');
       this.sendLoadout();
@@ -611,6 +623,7 @@ export class BreachEngine {
     this.gun.scale.setScalar(this.touchDevice ? 0.53 : 0.72);
     this.camera.add(this.gun);
     this.weapon = weapon;
+    this.swapFor = 0.42;
     player.weaponId = weapon.id;
     this.ammo = weapon.magazine;
     this.reserve = weapon.magazine * 3;
@@ -682,6 +695,7 @@ export class BreachEngine {
     if ((kind === 'frag' ? player.fragLeft : player.flashLeft) <= 0) return;
     if (this.shotIn > 0 || this.reloadFor > 0) return;
     this.ensureAudio();
+    this.grenadeThrowFor = 0.56;
     const direction = this.direction(this.yaw, this.pitch);
     if (this.isHost) {
       this.spawnGrenade(player, kind, direction);
@@ -703,6 +717,7 @@ export class BreachEngine {
     if (kind === 'frag') owner.fragLeft = Math.max(0, owner.fragLeft - 1);
     else owner.flashLeft = Math.max(0, owner.flashLeft - 1);
     if (owner.id === this.localId) {
+      this.grenadeThrowFor = 0.56;
       this.shotIn = 0.8;
       this.publishHud();
     }
@@ -753,10 +768,25 @@ export class BreachEngine {
     }
   }
 
+  private spawnBlast(position: THREE.Vector3, size: number, color: number, duration: number) {
+    const material = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.78, depthWrite: false });
+    const ringMaterial = new THREE.MeshBasicMaterial({ color: 0xffe1b0, transparent: true, opacity: 0.9, depthWrite: false });
+    const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 10), material);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.72, 0.035, 6, 32), ringMaterial);
+    ring.rotation.x = -Math.PI / 2;
+    mesh.position.copy(position);
+    ring.position.copy(position).add(new THREE.Vector3(0, 0.08, 0));
+    mesh.scale.setScalar(0.12);
+    ring.scale.setScalar(0.18);
+    this.scene.add(mesh, ring);
+    this.blastEffects.push({ mesh, ring, life: duration, maxLife: duration, size });
+  }
+
   private explodeGrenade(grenade: Grenade, applyDamage: boolean) {
     const pos = grenade.pos.clone();
     if (grenade.kind === 'frag') {
-      this.spawnParticles(pos, false, 20);
+      this.spawnBlast(pos, 5.2, 0xff713b, 0.58);
+      this.spawnParticles(pos, false, 28);
       this.spawnParticles(pos.clone().add(new THREE.Vector3(0, 0.3, 0)), true, 8);
       this.sound('boom');
       const distPlayer = Math.hypot(this.player.x - pos.x, this.player.z - pos.z);
@@ -771,7 +801,8 @@ export class BreachEngine {
         }
       }
     } else {
-      this.spawnParticles(pos, true, 10);
+      this.spawnBlast(pos, 7.5, 0xf4ffff, 0.42);
+      this.spawnParticles(pos, true, 18);
       this.sound('flashbang');
       if (applyDamage) {
         for (const target of this.actors) {
@@ -958,6 +989,8 @@ export class BreachEngine {
       this.feedFor = Math.max(0, this.feedFor - dt);
       this.shotIn = Math.max(0, this.shotIn - dt);
       this.flashFor = Math.max(0, this.flashFor - dt);
+      this.grenadeThrowFor = Math.max(0, this.grenadeThrowFor - dt);
+      this.swapFor = Math.max(0, this.swapFor - dt);
       this.gunKick = Math.max(0, this.gunKick - dt * 5);
       this.shake = Math.max(0, this.shake - dt * 2.4);
       this.muzzleFlash.visible = this.flashFor > 0;
@@ -981,7 +1014,18 @@ export class BreachEngine {
             this.updateAction(dt);
             if (this.bomb) {
               this.bomb.time = Math.max(0, this.bomb.time - dt);
-              if (this.bomb.time <= 0) this.endRound(this.attackingTeam, 'CHARGE D\u00c9TON\u00c9E');
+              if (this.bomb.time <= 0) {
+                const site = SITES.find((entry) => entry.id === this.bomb?.site);
+                if (site) {
+                  const blast = new THREE.Vector3(site.x, 0.55, site.z);
+                  this.spawnBlast(blast, 13, 0xff6338, 0.9);
+                  this.spawnParticles(blast, false, 46);
+                  this.spawnParticles(blast.clone().add(new THREE.Vector3(0, 0.35, 0)), true, 22);
+                  this.shake = Math.max(this.shake, 0.65);
+                  this.sound('boom');
+                }
+                this.endRound(this.attackingTeam, 'CHARGE DÉTONÉE');
+              }
             } else if (this.time <= 0) {
               this.endRound(otherTeam(this.attackingTeam), 'TEMPS \u00c9COUL\u00c9');
             }
@@ -1550,6 +1594,25 @@ export class BreachEngine {
         this.tracers.splice(i, 1);
       }
     }
+    for (let i = this.blastEffects.length - 1; i >= 0; i--) {
+      const effect = this.blastEffects[i];
+      effect.life -= dt;
+      const progress = 1 - Math.max(0, effect.life) / effect.maxLife;
+      const fade = 1 - progress;
+      effect.mesh.scale.setScalar(0.12 + progress * effect.size);
+      effect.ring.scale.setScalar(0.18 + progress * effect.size * 1.35);
+      effect.ring.position.y += dt * 0.16;
+      (effect.mesh.material as THREE.MeshBasicMaterial).opacity = fade * 0.48;
+      (effect.ring.material as THREE.MeshBasicMaterial).opacity = fade * 0.82;
+      if (effect.life <= 0) {
+        this.scene.remove(effect.mesh, effect.ring);
+        effect.mesh.geometry.dispose();
+        effect.ring.geometry.dispose();
+        (effect.mesh.material as THREE.Material).dispose();
+        (effect.ring.material as THREE.Material).dispose();
+        this.blastEffects.splice(i, 1);
+      }
+    }
   }
 
   private updateVisuals(dt: number) {
@@ -1587,6 +1650,11 @@ export class BreachEngine {
     this.camera.position.set(player.x + shakeX, (player.alive ? 1.57 : 0.65) + bob + shakeY, player.z);
     this.camera.rotation.set(this.pitch + this.gunKick * 0.012, this.yaw, 0, 'YXZ');
     this.gun.visible = player.alive;
+    const swapProgress = smoothRange(1 - this.swapFor / 0.42, 0, 1);
+    const swapDip = (1 - swapProgress) * 0.48;
+    const throwProgress = this.grenadeThrowFor > 0 ? 1 - this.grenadeThrowFor / 0.56 : 0;
+    const throwPose = Math.sin(throwProgress * Math.PI);
+    const throwSnap = Math.sin(Math.min(1, throwProgress * 1.35) * Math.PI);
     const reloadProgress = this.reloadFor > 0 ? clamp(1 - this.reloadFor / this.weapon.reload, 0, 1) : 1;
     const reloadPose = smoothRange(reloadProgress, 0, 0.18) * (1 - smoothRange(reloadProgress, 0.8, 1));
     const magazineOut = smoothRange(reloadProgress, 0.12, 0.34) * (1 - smoothRange(reloadProgress, 0.52, 0.76));
@@ -1594,15 +1662,15 @@ export class BreachEngine {
     const boltPull = smoothRange(reloadProgress, 0.76, 0.84) * (1 - smoothRange(reloadProgress, 0.88, 0.97));
     this.magazine.position.set(this.magazineHome.x - 0.06 * magazineOut, this.magazineHome.y - 0.17 * magazineOut, this.magazineHome.z + 0.04 * magazineOut);
     this.magazine.rotation.z = -0.18 * magazineOut;
-    this.offhand.position.set(0.09 * handReach, -0.09 * handReach - 0.04 * magazineOut, this.handTravel * handReach);
-    this.offhand.rotation.z = -0.16 * handReach;
+    this.offhand.position.set(0.09 * handReach - 0.13 * throwPose, -0.09 * handReach - 0.04 * magazineOut - 0.13 * throwPose, this.handTravel * handReach + 0.24 * throwSnap);
+    this.offhand.rotation.z = -0.16 * handReach - 0.42 * throwPose;
     this.bolt.position.z = this.boltHomeZ + boltPull * 0.11;
     this.gun.position.x = (this.touchDevice ? 0.2 : 0.31) - (this.pistolView ? 0.035 : 0) - reloadPose * 0.1 + (player.moving ? Math.cos(player.walk * 0.5) * 0.018 : 0);
-    this.gun.position.y = -0.29 + bob * 0.8 + reloadPose * 0.13;
-    this.gun.position.z = this.viewZ + this.gunKick * 0.09;
-    this.gun.rotation.x = this.gunKick * 0.12 + reloadPose * 0.18;
-    this.gun.rotation.y = -reloadPose * 0.12;
-    this.gun.rotation.z = -reloadPose * 0.34;
+    this.gun.position.y = -0.29 + bob * 0.8 + reloadPose * 0.13 - swapDip - throwPose * 0.07;
+    this.gun.position.z = this.viewZ + this.gunKick * 0.09 + swapDip * 0.36;
+    this.gun.rotation.x = this.gunKick * 0.12 + reloadPose * 0.18 + throwPose * 0.16;
+    this.gun.rotation.y = -reloadPose * 0.12 - throwPose * 0.08;
+    this.gun.rotation.z = -reloadPose * 0.34 + swapDip * 0.72 + throwPose * 0.12;
     if (this.bomb) {
       const site = SITES.find((entry) => entry.id === this.bomb?.site)!;
       this.bombMesh.position.set(site.x, 0, site.z);
