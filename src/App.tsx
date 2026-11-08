@@ -4,7 +4,7 @@ import {
   Play, Radio, RotateCcw, Settings2, ShoppingBag, Target, Trophy, UsersRound, Volume2, VolumeX, X,
 } from 'lucide-react';
 import GameScreen from './game/GameScreen';
-import { currentQuests, formatNumber, loadProfile, MAPS, MODES, QUESTS, saveProfile, SKINS, type GameMode, type MapId, type MatchResult, type Profile, type Quest, type Skin, type SkinId } from './game/data';
+import { currentQuests, DIFFICULTIES, formatNumber, loadProfile, MAPS, MODES, QUESTS, saveProfile, SKINS, type Difficulty, type GameMode, type MapId, type MatchResult, type Profile, type Quest, type Skin, type SkinId } from './game/data';
 import { randomRoomCode, RoomConnection, type RoomStatus } from './game/network';
 import WeaponArt from './game/WeaponArt';
 import TouchSettings from './game/TouchSettings';
@@ -33,6 +33,7 @@ function App() {
   const [toast, setToast] = useState('');
   const [touchCustom, setTouchCustom] = useState(loadTouchCustom);
   const [selectedMode, setSelectedMode] = useState<GameMode>('sd');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('normal');
   const [viewport, setViewport] = useState(() => ({ width: window.innerWidth, height: window.innerHeight }));
   const roomRef = useRef<RoomConnection | null>(null);
 
@@ -69,6 +70,7 @@ function App() {
       if (message.type === 'start' && room.status.role === 'guest') {
         if (MAPS.some((map) => map.id === message.mapId)) setSelectedMap(message.mapId as MapId);
         if (message.gameMode === 'sd' || message.gameMode === 'tdm') setSelectedMode(message.gameMode);
+        if (message.difficulty === 'easy' || message.difficulty === 'normal' || message.difficulty === 'hard') setSelectedDifficulty(message.difficulty);
         beginGame();
       }
     });
@@ -126,7 +128,7 @@ function App() {
   };
 
   const startRoom = () => {
-    if (room?.startMatch(selectedMap, selectedMode)) beginGame();
+    if (room?.startMatch(selectedMap, selectedMode, selectedDifficulty)) beginGame();
   };
 
   const exitGame = useCallback(() => {
@@ -211,7 +213,7 @@ function App() {
   const touchSizes: TouchSizes = touchCustom?.sizes ?? { ...DEFAULT_TOUCH_SIZES };
   const settingsPanel = panel === 'settings' ? <TouchSettings layout={touchLayout} sizes={touchSizes} viewport={viewport} onMove={moveTouchControl} onSize={sizeTouchControl} onReset={() => setTouchCustom(null)} onClose={closeSettings} /> : null;
 
-  if (running) return <><GameScreen key={runId} skin={equippedSkin} mapId={selectedMap} mode={selectedMode} room={room} sound={sound} touchLayout={touchLayout} touchSizes={touchSizes} viewport={viewport} onSettings={() => setPanel('settings')} onExit={exitGame} onRestart={restartGame} onResult={recordResult} />{settingsPanel}</>;
+  if (running) return <><GameScreen key={runId} skin={equippedSkin} mapId={selectedMap} mode={selectedMode} difficulty={selectedDifficulty} room={room} sound={sound} touchLayout={touchLayout} touchSizes={touchSizes} viewport={viewport} onSettings={() => setPanel('settings')} onExit={exitGame} onRestart={restartGame} onResult={recordResult} />{settingsPanel}</>;
 
   return <main className="lobby">
     <div className="lobby-art" />
@@ -246,6 +248,7 @@ function App() {
         <div className="hero-heading-rule"><span /> <b>UNE MISSION. DEUX DESTINS.</b></div>
         <p>Une vie. Deux sites. Aucune seconde chance.<br />Entrez dans l'ar&egrave;ne et faites chaque tir compter.</p>
         <div className="mode-picker" role="group" aria-label="Choisir le mode de jeu">{MODES.map((entry) => <button key={entry.id} className={`mode-choice ${selectedMode === entry.id ? 'active' : ''}`} onClick={() => setSelectedMode(entry.id)}><strong>{entry.name}</strong><small>{entry.tagline}</small></button>)}</div>
+        <div className="difficulty-picker" role="group" aria-label="Choisir la difficulté"><span>DIFFICULTÉ DE L'IA</span>{DIFFICULTIES.map((entry) => <button key={entry.id} className={selectedDifficulty === entry.id ? 'active' : ''} onClick={() => setSelectedDifficulty(entry.id)}><strong>{entry.name}</strong><small>{entry.tagline}</small></button>)}</div>
         <div className="hero-actions"><button className="primary-button deploy-button" onClick={startSolo}><span className="play-box"><Play size={15} fill="currentColor" /></span><span>LANCER LA PARTIE<small>JOUER CONTRE L'IA</small></span><ArrowRight className="button-arrow" size={20} /></button><button className="secondary-button" onClick={() => setPanel('room')}><UsersRound size={19} /><span>SALON PRIV&Eacute;<small>JOUER AVEC DES AMIS</small></span></button></div>
         <button className="how-link" onClick={() => setPanel('help')}><CircleHelp size={14} /> NOUVEL OP&Eacute;RATEUR ? <span>COMMENT JOUER</span> <ArrowRight size={13} /></button>
       </section>
