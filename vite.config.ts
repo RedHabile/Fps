@@ -8,8 +8,9 @@ import { viteSingleFile } from "vite-plugin-singlefile";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// https://vite.dev/config/
 export default defineConfig({
+  // GitHub Pages serves this project from /Fps/. Locally, use the site root.
+  base: process.env.GITHUB_ACTIONS ? "/Fps/" : "/",
   plugins: [react(), tailwindcss(), viteSingleFile()],
   resolve: {
     alias: {
