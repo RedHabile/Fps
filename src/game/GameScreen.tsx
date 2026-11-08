@@ -38,7 +38,7 @@ function timeLabel(seconds: number) {
   return `${Math.floor(clamped / 60)}:${String(clamped % 60).padStart(2, '0')}`;
 }
 
-export default function GameScreen({ skin, mapId, mode, room, sound, touchLayout, touchSizes, viewport, onSettings, onExit, onRestart, onResult }: GameScreenProps) {
+export default function GameScreen({ skin, mapId, mode, difficulty, room, sound, touchLayout, touchSizes, viewport, onSettings, onExit, onRestart, onResult }: GameScreenProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<BreachEngine | null>(null);
