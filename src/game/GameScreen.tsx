@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { ArrowLeft, Bomb, Crosshair, Flashlight, Pause, Play, Repeat2, RotateCcw, Settings2, Shield, Target, Zap } from 'lucide-react';
-import { ARMORS, formatNumber, MAPS, TDM_KILL_TARGET, WEAPONS, type GameMode, type MapId, type MatchResult, type Skin } from './data';
+import { ARMORS, formatNumber, MAPS, TDM_KILL_TARGET, WEAPONS, type Difficulty, type GameMode, type MapId, type MatchResult, type Skin } from './data';
 import { BreachEngine, type GameHUD } from './engine';
 import { type RoomConnection } from './network';
 import WeaponArt from './WeaponArt';
@@ -10,6 +10,7 @@ interface GameScreenProps {
   skin: Skin;
   mapId: MapId;
   mode: GameMode;
+  difficulty: Difficulty;
   room: RoomConnection | null;
   sound: boolean;
   touchLayout: TouchLayout;
@@ -62,6 +63,7 @@ export default function GameScreen({ skin, mapId, mode, room, sound, touchLayout
         skin,
         mapId,
         mode,
+        difficulty,
         room,
         sound,
         onHud: setHud,
