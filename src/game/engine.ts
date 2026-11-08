@@ -1173,7 +1173,11 @@ export class BreachEngine {
         if (actor.grenadeIn <= 0 && dist >= 5 && dist <= 17 && actor.blindFor <= 0 && Math.random() < (this.options.difficulty === 'easy' ? 0.018 : this.options.difficulty === 'hard' ? 0.075 : 0.045)) {
           const kind: GrenadeKind = dist > 10 && actor.flashLeft > 0 ? 'flash' : 'frag';
           const aim = new THREE.Vector3(target.x - actor.x, 0.18, target.z - actor.z).normalize();
-          this.spawnGrenade(actor, kind, aim);
+          const grenadeId = this.spawnGrenade(actor, kind, aim);
+          this.options.room?.send({
+            type: 'grenade-thrown', id: grenadeId, from: actor.id, kind, round: this.round,
+            x: actor.x, z: actor.z, dx: aim.x, dy: aim.y, dz: aim.z,
+          });
           actor.grenadeIn = (this.options.difficulty === 'easy' ? 18 : this.options.difficulty === 'hard' ? 9 : 13) + Math.random() * 5;
         }
         if (actor.reaction <= 0 && actor.shootIn <= 0 && actor.reloadFor <= 0 && actor.blindFor <= 0) {
@@ -1741,7 +1745,7 @@ export class BreachEngine {
       fragLeft: player.fragLeft,
       flashLeft: player.flashLeft,
       respawnIn: this.isTdm && !player.alive && this.phase === 'playing' ? Math.max(0, player.respawnIn) : 0,
-      flashBlind: clamp(this.flashWhite, 0, 1),
+      flashBlind: this.flashWhite > 0 ? 1 : 0,
       ready: this.localReady,
       attacking,
       bombTime: this.bomb ? Math.ceil(this.bomb.time) : null,
