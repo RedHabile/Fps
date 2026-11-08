@@ -1010,6 +1010,8 @@ export class BreachEngine {
         this.updatePlayer(dt);
         if (this.isHost) {
           this.updateBots(dt);
+          // Grenades must keep simulating in every host game mode, not only TDM.
+          this.updateGrenades(dt, true);
           if (!this.isTdm) {
             this.updateAction(dt);
             if (this.bomb) {
@@ -1032,7 +1034,6 @@ export class BreachEngine {
             this.checkEliminations();
           } else {
             this.updateRespawns(dt);
-            this.updateGrenades(dt, true);
             if (this.blueScore >= TDM_KILL_TARGET || this.redScore >= TDM_KILL_TARGET || this.tdmTime <= 0) {
               this.finishTdm();
             }
