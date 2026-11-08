@@ -184,10 +184,10 @@ export class RoomConnection {
     else this.send({ type: 'team-request', team });
   }
 
-  startMatch(mapId: MapId, gameMode: GameMode = 'sd') {
+  startMatch(mapId: MapId, gameMode: GameMode = 'sd', difficulty: 'easy' | 'normal' | 'hard' = 'normal') {
     if (this.status.role !== 'host' || !['waiting', 'connected'].includes(this.status.stage)) return false;
     this.update({ inMatch: true });
-    this.send({ type: 'start', mapId, gameMode });
+    this.send({ type: 'start', mapId, gameMode, difficulty });
     return true;
   }
 
