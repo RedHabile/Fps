@@ -17,6 +17,7 @@ interface Actor extends OperatorRig {
   z: number;
   targetX: number;
   targetZ: number;
+  targetYaw: number;
   yaw: number;
   health: number;
   armor: number;
@@ -215,7 +216,7 @@ function makeActor(id: string, team: Team, bot: boolean, index: number, displayT
   const rig = buildOperator(id, displayTeam);
   const sidearm = WEAPONS[0];
   return {
-    id, team, bot, index, x: 0, z: 0, targetX: 0, targetZ: 0, yaw: 0,
+    id, team, bot, index, x: 0, z: 0, targetX: 0, targetZ: 0, targetYaw: 0, yaw: 0,
     health: 100, armor: 0, armorId: 'none', alive: true, ...rig,
     path: [], planIn: 0, shootIn: 0.5, grenadeIn: 5 + Math.random() * 5, reaction: 0, targetId: '', strafe: 1,
     strafeIn: 0, walk: Math.random() * 4, moving: false,
@@ -1011,6 +1012,7 @@ export class BreachEngine {
         }
         this.updatePlayer(dt);
         if (this.isHost) {
+          this.updateRemoteActors(dt);
           this.updateBots(dt);
           // Grenades must keep simulating in every host game mode, not only TDM.
           this.updateGrenades(dt, true);
@@ -1061,7 +1063,7 @@ export class BreachEngine {
       this.updateEffects(dt);
       this.networkIn -= dt;
       if (this.networkIn <= 0 && this.options.room) {
-        this.networkIn = 0.1;
+        this.networkIn = 0.05;
         if (this.isHost) this.sendSnapshot();
         else if (this.phase === 'buy') this.sendLoadout();
         else if (this.phase === 'playing') this.options.room.send({ type: 'position', x: this.player.x, z: this.player.z, yaw: this.yaw, pitch: this.pitch, round: this.round, skinId: this.options.skin.id });
@@ -1266,11 +1268,13 @@ export class BreachEngine {
       if (this.player.respawnIn <= 0) this.respawnPlayer();
     }
     for (const actor of this.actors) {
-      if (actor.id === this.localId) continue;
+      if (actor.id === this.localId || (this.isHost && actor.bot)) continue;
       const beforeX = actor.x;
       const beforeZ = actor.z;
-      actor.x += (actor.targetX - actor.x) * Math.min(1, dt * 12);
-      actor.z += (actor.targetZ - actor.z) * Math.min(1, dt * 12);
+      const blend = 1 - Math.exp(-dt * 20);
+      actor.x += (actor.targetX - actor.x) * blend;
+      actor.z += (actor.targetZ - actor.z) * blend;
+      actor.yaw += angleDiff(actor.targetYaw, actor.yaw) * blend;
       actor.moving = Math.hypot(actor.x - beforeX, actor.z - beforeZ) > 0.003;
       if (actor.moving) actor.walk += dt * 8;
     }
@@ -1987,14 +1991,13 @@ export class BreachEngine {
       if (!actor.alive || this.phase !== 'playing' || this.paused) return;
       if (message.type === 'position' && message.round === this.round &&
         typeof message.x === 'number' && typeof message.z === 'number' && typeof message.yaw === 'number') {
-        const x = clamp(message.x, -32, 32);
-        const z = clamp(message.z, -31.5, 31.5);
+        const x = clamp(message.x, -32 * MAP_SCALE, 32 * MAP_SCALE);
+        const z = clamp(message.z, -31.5 * MAP_SCALE, 31.5 * MAP_SCALE);
         if (!blocked(x, z, 0.55, this.obstacles)) {
-          actor.moving = Math.hypot(actor.x - x, actor.z - z) > 0.02;
-          actor.x = x;
-          actor.z = z;
-          actor.yaw = message.yaw;
-          if (actor.moving) actor.walk += 0.8;
+          actor.moving = Math.hypot(actor.targetX - x, actor.targetZ - z) > 0.02;
+          actor.targetX = x;
+          actor.targetZ = z;
+          actor.targetYaw = message.yaw;
         }
       } else if (message.type === 'shoot' && message.round === this.round && typeof message.dx === 'number' && typeof message.dy === 'number' && typeof message.dz === 'number') {
         if (![message.dx, message.dy, message.dz].every(Number.isFinite)) return;
@@ -2054,7 +2057,7 @@ export class BreachEngine {
         } else {
           actor.targetX = data.x;
           actor.targetZ = data.z;
-          actor.yaw = data.yaw;
+          actor.targetYaw = data.yaw;
           actor.reloadFor = typeof data.reloadFor === 'number' ? data.reloadFor : 0;
           actor.reloadTotal = typeof data.reloadTotal === 'number' ? Math.max(0.1, data.reloadTotal) : 1.6;
           actor.fireKick = typeof data.fireKick === 'number' ? data.fireKick : 0;
