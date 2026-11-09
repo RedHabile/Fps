@@ -71,10 +71,15 @@ function App() {
         if (MAPS.some((map) => map.id === message.mapId)) setSelectedMap(message.mapId as MapId);
         if (message.gameMode === 'sd' || message.gameMode === 'tdm') setSelectedMode(message.gameMode);
         if (message.difficulty === 'easy' || message.difficulty === 'normal' || message.difficulty === 'hard') setSelectedDifficulty(message.difficulty);
-        beginGame();
       }
     });
-  }, [room, beginGame]);
+  }, [room]);
+
+  // The guest leaves the lobby when the network layer confirms the start packet.
+  // Watching the room status also prevents a missed one-off event from trapping players in the lobby.
+  useEffect(() => {
+    if (room && room.status.role === 'guest' && roomStatus?.inMatch) beginGame();
+  }, [room, roomStatus?.inMatch, beginGame]);
 
   const closeRoom = () => {
     roomRef.current?.destroy();
