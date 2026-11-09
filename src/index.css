@@ -405,54 +405,50 @@ button{border:0}
 }
 @media (prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 
-
-/* Navigation verticale fluide sur petits écrans et en mode paysage */
+/* Défilement discret du lobby sans déplacer le titre ni refaire sa mise en page */
 .lobby-content{
   overflow-x:hidden;
   overflow-y:auto;
   overscroll-behavior-y:contain;
   -webkit-overflow-scrolling:touch;
   scrollbar-width:thin;
-  scrollbar-color:rgba(159,231,197,.55) transparent;
+  scrollbar-color:rgba(159,231,197,.45) transparent;
 }
 .menu-panel{
   overscroll-behavior:contain;
   -webkit-overflow-scrolling:touch;
   touch-action:pan-y;
   scrollbar-width:thin;
-  scrollbar-color:rgba(159,231,197,.55) transparent;
+  scrollbar-color:rgba(159,231,197,.45) transparent;
 }
 @media (max-width:900px), (max-height:700px){
   .lobby-content{
-    display:flex;
-    flex-direction:column;
-    align-items:stretch;
+    display:block;
+    overflow-y:auto;
   }
   .hero-copy{
-    position:relative;
-    top:auto;
-    left:auto;
-    right:auto;
-    transform:none;
+    position:absolute;
+    left:clamp(20px,5vw,55px);
+    top:clamp(24px,10vh,90px);
+    right:20px;
     width:auto;
     max-width:670px;
-    margin:clamp(24px,7vh,64px) 24px 32px;
-    flex:none;
+    transform:none;
+    margin:0;
   }
-  .lobby-footer{
-    position:relative;
-    inset:auto;
-    flex:none;
-    min-height:75px;
-    height:auto;
-    margin-top:auto;
+  .hero-copy h1{
+    font-size:clamp(54px,9vw,100px);
+    line-height:.82;
+    margin:18px 0 16px;
   }
+  .hero-copy p{max-width:520px}
 }
 @media (max-width:700px){
-  .hero-copy{margin:28px 20px 30px}
-  .lobby-footer{padding:14px 20px;flex-wrap:wrap;gap:14px;min-height:75px}
+  .hero-copy{left:18px;right:14px;top:22px}
+  .hero-copy h1{font-size:clamp(48px,12vw,76px)}
 }
 @media (max-height:500px){
-  .hero-copy{margin-top:18px;margin-bottom:22px}
-  .lobby-footer{min-height:52px}
+  .hero-copy{top:12px}
+  .hero-copy h1{font-size:clamp(42px,8vw,68px);margin:9px 0}
+  .hero-copy p{margin:8px 0 12px;font-size:11px}
 }
