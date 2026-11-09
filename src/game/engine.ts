@@ -1501,18 +1501,27 @@ export class BreachEngine {
     }
     const origin = new THREE.Vector3(shooter.x, 1.35, shooter.z);
     const destination = new THREE.Vector3(target.x, 1.2, target.z);
-    const chance = clamp(0.25 - range * 0.006, 0.12, 0.26);
+    const difficulty = this.options.difficulty;
+    const chance = difficulty === 'hard'
+      ? clamp(0.66 - range * 0.005, 0.48, 0.64)
+      : difficulty === 'normal'
+        ? clamp(0.38 - range * 0.006, 0.22, 0.36)
+        : clamp(0.20 - range * 0.006, 0.10, 0.19);
     const hit = Math.random() < chance;
     if (!hit) {
-      destination.x += (Math.random() - 0.5) * 2.3;
-      destination.y += (Math.random() - 0.5) * 1.2;
-      destination.z += (Math.random() - 0.5) * 2.3;
+      const missSpread = difficulty === 'hard' ? 1.05 : difficulty === 'normal' ? 1.8 : 2.6;
+      destination.x += (Math.random() - 0.5) * missSpread;
+      destination.y += (Math.random() - 0.5) * missSpread * 0.5;
+      destination.z += (Math.random() - 0.5) * missSpread;
     }
     this.tracer(origin, destination, shooter.team === this.player.team ? 0x9cebd6 : 0xffaf79);
     this.spawnParticles(origin, false, 3);
     if (hit) {
       this.spawnParticles(destination, true, 4);
-      const damage = weapon.kind === 'shotgun' ? (range < 9 ? 21 : 9) : Math.max(9, Math.round(weapon.damage * 0.45));
+      const damageScale = difficulty === 'hard' ? 0.62 : difficulty === 'normal' ? 0.44 : 0.32;
+      const damage = weapon.kind === 'shotgun'
+        ? Math.round((range < 9 ? 21 : 9) * (difficulty === 'hard' ? 1 : difficulty === 'normal' ? 0.8 : 0.65))
+        : Math.max(7, Math.round(weapon.damage * damageScale));
       this.damageActor(target, damage, shooter);
     }
     if (distance(shooter, this.player) < 14 && Math.random() > 0.4) this.sound('distant');
