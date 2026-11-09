@@ -87,7 +87,21 @@ export class RoomConnection {
       this.update({ stage: 'error', message });
     });
     this.peer.on('disconnected', () => {
-      if (!this.hostConnection?.open && !this.connections.size) this.update({ stage: 'error', message: 'Le service de salon est indisponible.' });
+      if (this.closed || !this.peer) return;
+      // A signaling-server drop does not necessarily mean peer connections are lost.
+      // Re-register the peer instead of immediately marking the whole room unavailable.
+      this.update({ message: 'Reconnexion au service de salon...' });
+      try {
+        this.peer.reconnect();
+        if (this.timeout) clearTimeout(this.timeout);
+        this.timeout = setTimeout(() => {
+          if (this.status.stage === 'connecting' || this.status.message === 'Reconnexion au service de salon...') {
+            this.update({ stage: 'error', message: 'Service de salon inaccessible. Réessayez dans quelques instants.' });
+          }
+        }, 12000);
+      } catch {
+        this.update({ stage: 'error', message: 'Service de salon inaccessible. Réessayez dans quelques instants.' });
+      }
     });
   }
 
