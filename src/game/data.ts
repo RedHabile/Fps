@@ -196,7 +196,7 @@ function newQuestState(now = Date.now()): QuestState {
 }
 export function currentQuests(quests?: QuestState, now = Date.now()): QuestState {
   const valid = quests && typeof quests.resetAt === 'number' && now < quests.resetAt + QUEST_DURATION && Array.isArray(quests.activeIds) && quests.activeIds.length === 3 && quests.activeIds.every((id) => QUESTS.some((q) => q.id === id)) && Array.isArray(quests.claimed) && [quests.matches, quests.kills, quests.rounds, quests.wins, quests.points, quests.hardWins].every((v) => typeof v === 'number' && Number.isFinite(v));
-  return valid ? quests : newQuestState(now);
+  return quests && valid ? quests : newQuestState(now);
 }
 export function questTimeRemaining(quests: QuestState, now = Date.now()) { return Math.max(0, quests.resetAt + QUEST_DURATION - now); }
 export interface Achievement { id: AchievementId; name: string; description: string; metric: 'wins' | 'matches' | 'kills' | 'hardWins' | 'bestMatchKills' | 'level'; target: number; }
