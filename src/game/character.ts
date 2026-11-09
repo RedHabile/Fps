@@ -255,8 +255,8 @@ export function buildOperator(id: string, team: 'blue' | 'red'): OperatorRig {
   shadow.scale.y = 1.35;
   shadow.userData.keepSeparate = true;
   group.add(shadow);
-  const hitbox = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.94, 0.7), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
-  hitbox.position.y = 0.97;
+  const hitbox = new THREE.Mesh(new THREE.BoxGeometry(0.48, 1.78, 0.42), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+  hitbox.position.y = 0.89;
   hitbox.userData.actorId = id;
   hitbox.userData.keepSeparate = true;
   group.add(hitbox);
