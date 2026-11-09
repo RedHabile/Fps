@@ -11,10 +11,12 @@ export interface Obstacle {
   color: number;
 }
 
-export const SITES = [
+export const MAP_SCALE = 1.45;
+const BASE_SITES = [
   { id: 'A' as const, x: -11.5, z: -4.8 },
   { id: 'B' as const, x: 11.5, z: -4.8 },
 ];
+export const SITES = BASE_SITES.map((site) => ({ ...site, x: site.x * MAP_SCALE, z: site.z * MAP_SCALE }));
 
 const EXPANSION: Obstacle[] = [
   { x: 0, z: 20, w: 10, d: 1.8, h: 3.3, kind: 'concrete', color: 0x6c7772 },
@@ -111,11 +113,21 @@ const FORT_OBSTACLES: Obstacle[] = [
   ...EXPANSION.map((obstacle) => ({ ...obstacle, kind: 'concrete' as const, color: 0x9c907a })),
 ];
 
-export function obstaclesForMap(mapId: MapId) {
+function baseObstaclesForMap(mapId: MapId) {
   if (mapId === 'terminal') return TERMINAL_OBSTACLES;
   if (mapId === 'usine') return USINE_OBSTACLES;
   if (mapId === 'forteresse') return FORT_OBSTACLES;
   return OBSTACLES;
+}
+
+export function obstaclesForMap(mapId: MapId) {
+  return baseObstaclesForMap(mapId).map((obstacle) => ({
+    ...obstacle,
+    x: obstacle.x * MAP_SCALE,
+    z: obstacle.z * MAP_SCALE,
+    w: obstacle.w * MAP_SCALE,
+    d: obstacle.d * MAP_SCALE,
+  }));
 }
 
 export function blocked(x: number, z: number, radius = 0.55, obstacles = OBSTACLES) {
@@ -149,9 +161,9 @@ export function lineClear(x1: number, z1: number, x2: number, z2: number, margin
   });
 }
 
-const STEP = 2;
-const MIN_X = -31;
-const MIN_Z = -29;
+const STEP = 2 * MAP_SCALE;
+const MIN_X = -31 * MAP_SCALE;
+const MIN_Z = -29 * MAP_SCALE;
 const COLS = 32;
 const ROWS = 30;
 
@@ -320,7 +332,9 @@ function surfaceTexture(kind: 'ground' | 'concrete' | 'metal') {
 }
 
 export function buildWorld(scene: THREE.Scene, mapId: MapId = 'depot') {
-  const obstacles = obstaclesForMap(mapId);
+  const obstacles = baseObstaclesForMap(mapId);
+  const mapRoot = new THREE.Group();
+  mapRoot.scale.setScalar(MAP_SCALE);
   const indoor = MAPS.find((map) => map.id === mapId)?.indoor ?? false;
   const colliderMeshes: THREE.Object3D[] = [];
   const sky = document.createElement('canvas');
@@ -338,10 +352,10 @@ export function buildWorld(scene: THREE.Scene, mapId: MapId = 'depot') {
   scene.background = indoor ? new THREE.Color(mapId === 'usine' ? 0x4b4c43 : 0x425654) : skyTexture;
   if (indoor) skyTexture.dispose();
   scene.fog = new THREE.Fog(indoor ? 0x697a77 : mapId === 'forteresse' ? 0xb3ad96 : 0x9aada9, indoor ? 24 : 32, indoor ? 82 : 100);
-  scene.add(new THREE.HemisphereLight(indoor ? 0xc5ddd8 : 0xd2edeb, 0x4d5148, indoor ? 1.8 : 2.15));
+  mapRoot.add(new THREE.HemisphereLight(indoor ? 0xc5ddd8 : 0xd2edeb, 0x4d5148, indoor ? 1.8 : 2.15));
   const sunlight = new THREE.DirectionalLight(indoor ? 0xffddb4 : 0xffd2a0, indoor ? 1.15 : 2.2);
   sunlight.position.set(-15, 30, 12);
-  scene.add(sunlight);
+  mapRoot.add(sunlight);
 
   const groundTexture = surfaceTexture('ground');
   const concreteTexture = surfaceTexture('concrete');
@@ -352,7 +366,7 @@ export function buildWorld(scene: THREE.Scene, mapId: MapId = 'depot') {
   );
   floor.rotation.x = -Math.PI / 2;
   floor.position.y = -0.03;
-  scene.add(floor);
+  mapRoot.add(floor);
 
   const lineMat = new THREE.MeshBasicMaterial({ color: 0xaebcaf, transparent: true, opacity: 0.27 });
   const gridX = new THREE.InstancedMesh(new THREE.BoxGeometry(0.025, 0.008, 64), lineMat, 13);
@@ -365,12 +379,12 @@ export function buildWorld(scene: THREE.Scene, mapId: MapId = 'depot') {
   }
   gridX.instanceMatrix.needsUpdate = true;
   gridZ.instanceMatrix.needsUpdate = true;
-  scene.add(gridX, gridZ);
+  mapRoot.add(gridX, gridZ);
   const roadMat = new THREE.MeshBasicMaterial({ color: 0xe9c58a, transparent: true, opacity: 0.55 });
   const road = new THREE.InstancedMesh(new THREE.BoxGeometry(0.12, 0.015, 1.5), roadMat, 15);
   for (let i = 0; i < 15; i++) road.setMatrixAt(i, transform.makeTranslation(0, 0.02, -28 + i * 4));
   road.instanceMatrix.needsUpdate = true;
-  scene.add(road);
+  mapRoot.add(road);
 
   const edgeMaterial = new THREE.LineBasicMaterial({ color: 0x263c3d, transparent: true, opacity: 0.52 });
   const trimMaterial = new THREE.MeshStandardMaterial({ color: 0x354848, roughness: 0.8 });
@@ -378,11 +392,11 @@ export function buildWorld(scene: THREE.Scene, mapId: MapId = 'depot') {
     const material = new THREE.MeshStandardMaterial({ color: obstacle.color, map: obstacle.kind === 'container' ? metalTexture : concreteTexture, roughness: 0.9, metalness: obstacle.kind === 'container' ? 0.28 : 0.04 });
     const mesh = box(obstacle.w, obstacle.h, obstacle.d, material);
     mesh.position.set(obstacle.x, obstacle.h / 2, obstacle.z);
-    scene.add(mesh);
+    mapRoot.add(mesh);
     colliderMeshes.push(mesh);
     const edges = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry), edgeMaterial);
     edges.position.copy(mesh.position);
-    scene.add(edges);
+    mapRoot.add(edges);
     if (obstacle.kind === 'container') {
       const positions: number[] = [];
       if (obstacle.w > obstacle.d) {
@@ -402,10 +416,10 @@ export function buildWorld(scene: THREE.Scene, mapId: MapId = 'depot') {
       geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
       const ribs = new THREE.LineSegments(geometry, edgeMaterial);
       ribs.position.copy(mesh.position);
-      scene.add(ribs);
+      mapRoot.add(ribs);
       const trim = box(obstacle.w + 0.05, 0.09, obstacle.d + 0.05, trimMaterial);
       trim.position.set(obstacle.x, obstacle.h - 0.15, obstacle.z);
-      scene.add(trim);
+      mapRoot.add(trim);
     } else if ((obstacle.kind === 'concrete' || obstacle.kind === 'building') && obstacle.w < 20 && obstacle.d < 20) {
       const positions: number[] = [];
       if (obstacle.w > obstacle.d) {
@@ -422,7 +436,7 @@ export function buildWorld(scene: THREE.Scene, mapId: MapId = 'depot') {
       geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
       const seams = new THREE.LineSegments(geometry, edgeMaterial);
       seams.position.copy(mesh.position);
-      scene.add(seams);
+      mapRoot.add(seams);
     }
   });
 
@@ -440,7 +454,7 @@ export function buildWorld(scene: THREE.Scene, mapId: MapId = 'depot') {
     }
     windows.instanceMatrix.needsUpdate = true;
     stripes.instanceMatrix.needsUpdate = true;
-    scene.add(windows, stripes);
+    mapRoot.add(windows, stripes);
   }
 
   const spawnSign = new THREE.Mesh(
@@ -448,20 +462,20 @@ export function buildWorld(scene: THREE.Scene, mapId: MapId = 'depot') {
     new THREE.MeshBasicMaterial({ map: spawnSignTexture(MAPS.find((map) => map.id === mapId)!.code), transparent: true, opacity: 0.72, depthWrite: false }),
   );
   spawnSign.position.set(0, 1.9, 20.91);
-  scene.add(spawnSign);
+  mapRoot.add(spawnSign);
   const defenderSign = spawnSign.clone();
   defenderSign.position.z = -22.91;
   defenderSign.rotation.y = Math.PI;
-  scene.add(defenderSign);
+  mapRoot.add(defenderSign);
 
-  for (const site of SITES) {
+  for (const site of BASE_SITES) {
     const marker = new THREE.Mesh(
       new THREE.PlaneGeometry(6, 6),
       new THREE.MeshBasicMaterial({ map: siteTexture(site.id), transparent: true, depthWrite: false, opacity: 0.9 }),
     );
     marker.rotation.x = -Math.PI / 2;
     marker.position.set(site.x, 0.025, site.z);
-    scene.add(marker);
+    mapRoot.add(marker);
   }
 
   if (indoor) {
@@ -469,7 +483,7 @@ export function buildWorld(scene: THREE.Scene, mapId: MapId = 'depot') {
     const beamMaterial = new THREE.MeshStandardMaterial({ color: mapId === 'usine' ? 0x6d5745 : 0x354e50, roughness: 0.75, metalness: 0.35 });
     const roof = box(72, 0.4, 70, roofMaterial);
     roof.position.y = 8.2;
-    scene.add(roof);
+    mapRoot.add(roof);
     const beams = new THREE.InstancedMesh(new THREE.BoxGeometry(66, 0.35, 0.35), beamMaterial, 7);
     const lights = new THREE.InstancedMesh(new THREE.BoxGeometry(2.2, 0.08, 0.35), new THREE.MeshBasicMaterial({ color: mapId === 'usine' ? 0xffd59a : 0xd0f8ea }), 21);
     for (let i = 0; i < 7; i++) {
@@ -479,32 +493,33 @@ export function buildWorld(scene: THREE.Scene, mapId: MapId = 'depot') {
     }
     beams.instanceMatrix.needsUpdate = true;
     lights.instanceMatrix.needsUpdate = true;
-    scene.add(beams, lights);
+    mapRoot.add(beams, lights);
     const conduitGeometry = new THREE.CylinderGeometry(0.18, 0.18, 64, 8);
     conduitGeometry.rotateX(Math.PI / 2);
     const conduits = new THREE.InstancedMesh(conduitGeometry, beamMaterial, 4);
     [-24, -8, 8, 24].forEach((x, index) => conduits.setMatrixAt(index, transform.makeTranslation(x, 7.15, 0)));
     conduits.instanceMatrix.needsUpdate = true;
-    scene.add(conduits);
+    mapRoot.add(conduits);
     if (mapId === 'terminal') {
       const railMaterial = new THREE.MeshStandardMaterial({ color: 0xaeb9ac, metalness: 0.6, roughness: 0.5 });
       for (const x of [-23, -21, 21, 23]) {
         const rail = box(0.08, 0.04, 63, railMaterial);
         rail.position.set(x, 0.03, 0);
-        scene.add(rail);
+        mapRoot.add(rail);
       }
     } else {
       const tankMaterial = new THREE.MeshStandardMaterial({ color: 0x8b7258, roughness: 0.7, metalness: 0.4 });
       obstacles.filter((obstacle) => obstacle.kind === 'building').slice(0, 6).forEach((obstacle) => {
         const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 2, 12), tankMaterial);
         tank.position.set(obstacle.x, obstacle.h + 1, obstacle.z);
-        scene.add(tank);
+        mapRoot.add(tank);
         const cap = box(1.45, 0.12, 1.45, beamMaterial);
         cap.position.set(obstacle.x, obstacle.h + 2, obstacle.z);
-        scene.add(cap);
+        mapRoot.add(cap);
       });
     }
-    scene.add(new THREE.AmbientLight(mapId === 'usine' ? 0xf1d6b5 : 0xd4e9dd, 0.95));
+    mapRoot.add(new THREE.AmbientLight(mapId === 'usine' ? 0xf1d6b5 : 0xd4e9dd, 0.95));
+    scene.add(mapRoot);
     return colliderMeshes;
   }
 
@@ -515,40 +530,42 @@ export function buildWorld(scene: THREE.Scene, mapId: MapId = 'depot') {
     for (const side of [-1, 1]) {
       const tower = box(7, 13, 7, distantMaterial);
       tower.position.set(side * 36, 6.5, -34);
-      scene.add(tower);
+      mapRoot.add(tower);
       for (let x = -2.5; x <= 2.5; x += 2.5) {
         const battlement = box(1.2, 1.3, 1, distantMaterial);
         battlement.position.set(side * 36 + x, 13.4, -30.5);
-        scene.add(battlement);
+        mapRoot.add(battlement);
       }
       const window = box(1.1, 2, 0.12, windowMaterial);
       window.position.set(side * 36, 9, -30.42);
-      scene.add(window);
+      mapRoot.add(window);
     }
+    scene.add(mapRoot);
     return colliderMeshes;
   }
   for (let i = 0; i < 9; i++) {
     const height = 6 + (i % 3) * 3;
     const building = box(7 + (i % 2) * 3, height, 8, distantMaterial);
     building.position.set(-40 + i * 10, height / 2, -44 - (i % 2) * 5);
-    scene.add(building);
+    mapRoot.add(building);
   }
   for (const side of [-1, 1]) {
     const tower = box(0.6, 18, 0.6, darkMaterial);
     tower.position.set(side * 41, 9, -36);
-    scene.add(tower);
+    mapRoot.add(tower);
     const boom = box(14, 0.45, 0.45, darkMaterial);
     boom.position.set(side * 35, 17, -36);
-    scene.add(boom);
+    mapRoot.add(boom);
     const cable = box(0.08, 9, 0.08, darkMaterial);
     cable.position.set(side * 29, 12.5, -36);
-    scene.add(cable);
+    mapRoot.add(cable);
     const lampPost = box(0.15, 7, 0.15, darkMaterial);
     lampPost.position.set(side * 32, 3.5, -1);
-    scene.add(lampPost);
+    mapRoot.add(lampPost);
     const lamp = box(0.8, 0.14, 0.4, new THREE.MeshBasicMaterial({ color: 0xffc887 }));
     lamp.position.set(side * 32, 6.9, -1);
-    scene.add(lamp);
+    mapRoot.add(lamp);
   }
+  scene.add(mapRoot);
   return colliderMeshes;
 }
