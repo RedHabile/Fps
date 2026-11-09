@@ -452,3 +452,24 @@ button{border:0}
   .hero-copy h1{font-size:clamp(42px,8vw,68px);margin:9px 0}
   .hero-copy p{margin:8px 0 12px;font-size:11px}
 }
+
+/* Correctif iPad : le conteneur du lobby ne doit jamais démarrer avec un scroll décalé */
+.lobby-content{
+  overflow:hidden !important;
+  overscroll-behavior:auto;
+}
+@media (max-width:1100px), (max-height:760px){
+  .hero-copy{
+    top:clamp(12px,3.5vh,30px) !important;
+    transform:none !important;
+  }
+  .hero-copy h1{
+    font-size:clamp(58px,8.5vw,92px) !important;
+    line-height:.78;
+    margin:10px 0 14px !important;
+  }
+}
+@media (max-width:700px){
+  .lobby-content{overflow:hidden !important}
+  .hero-copy{top:12px !important}
+}
