@@ -3,9 +3,9 @@ export type ArmorId = 'none' | 'light' | 'heavy';
 export type GameMode = 'sd' | 'tdm';
 export type Difficulty = 'easy' | 'normal' | 'hard';
 export const DIFFICULTIES: { id: Difficulty; name: string; tagline: string }[] = [
-  { id: 'easy', name: 'FACILE', tagline: 'IA moins réactive' },
-  { id: 'normal', name: 'NORMAL', tagline: 'ÉQUILIBRÉ' },
-  { id: 'hard', name: 'DIFFICILE', tagline: 'IA rapide et précise' },
+  { id: 'easy', name: 'RECRUE', tagline: 'IA indulgente · réactions lentes et tirs moins précis' },
+  { id: 'normal', name: 'VÉTÉRAN', tagline: 'IA tactique · réactions et précision équilibrées' },
+  { id: 'hard', name: 'ÉLITE', tagline: 'IA redoutable · réactions rapides et tirs plus précis' },
 ];
 export type WeaponSlot = 'sidearm' | 'primary';
 export type GrenadeKind = 'frag' | 'flash';
