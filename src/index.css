@@ -404,3 +404,55 @@ button{border:0}
   .health-panel,.ammo-panel{gap:6px}.health-number{font-size:26px}.ammo-number{font-size:28px}.health-number span,.ammo-number span{font-size:10px}.health-bar{width:70px}.armor-bar{width:40px}.armor-hud strong{font-size:17px}.vitals-group{gap:6px}.buy-heading h2{font-size:30px}.buy-heading p{font-size:9px}.buy-card{padding:5px}.buy-card .weapon-drawing{height:27px}.buy-card-name strong{font-size:12px}.buy-card-stats{font-size:5px}.buy-footer p{display:none}.buy-footer{margin-top:7px}.armor-buy{margin-top:5px;padding-top:5px}.armor-choice{padding:5px 3px}.armor-choice span{font-size:8px}.armor-choice strong{font-size:7px}.touch-settings-panel .panel-heading h2{font-size:34px}
 }
 @media (prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+
+/* Navigation verticale fluide sur petits écrans et en mode paysage */
+.lobby-content{
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(159,231,197,.55) transparent;
+}
+.menu-panel{
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(159,231,197,.55) transparent;
+}
+@media (max-width:900px), (max-height:700px){
+  .lobby-content{
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+  }
+  .hero-copy{
+    position:relative;
+    top:auto;
+    left:auto;
+    right:auto;
+    transform:none;
+    width:auto;
+    max-width:670px;
+    margin:clamp(24px,7vh,64px) 24px 32px;
+    flex:none;
+  }
+  .lobby-footer{
+    position:relative;
+    inset:auto;
+    flex:none;
+    min-height:75px;
+    height:auto;
+    margin-top:auto;
+  }
+}
+@media (max-width:700px){
+  .hero-copy{margin:28px 20px 30px}
+  .lobby-footer{padding:14px 20px;flex-wrap:wrap;gap:14px;min-height:75px}
+}
+@media (max-height:500px){
+  .hero-copy{margin-top:18px;margin-bottom:22px}
+  .lobby-footer{min-height:52px}
+}
