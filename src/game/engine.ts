@@ -1139,42 +1139,47 @@ export class BreachEngine {
       actor.moving = false;
       if (this.actionFor(actor)) continue;
 
+      const elite = this.options.difficulty === 'hard';
       const visible = this.actors
         .filter((target) => target.alive && target.team !== actor.team)
         .map((target) => ({ target, dist: distance(actor, target) }))
         .filter(({ target, dist }) => {
-          if (dist > (this.options.difficulty === 'hard' ? 24 : 20)) return false;
+          if (dist > (elite ? 29 : this.options.difficulty === 'easy' ? 16 : 20)) return false;
           const dx = (target.x - actor.x) / Math.max(dist, 0.01);
           const dz = (target.z - actor.z) / Math.max(dist, 0.01);
           const facing = -Math.sin(actor.yaw) * dx - Math.cos(actor.yaw) * dz;
-          return facing > (this.options.difficulty === 'hard' ? -0.65 : -0.35) && lineClear(actor.x, actor.z, target.x, target.z, 0, this.obstacles);
+          return facing > (elite ? -0.9 : this.options.difficulty === 'easy' ? -0.2 : -0.35) && lineClear(actor.x, actor.z, target.x, target.z, 0, this.obstacles);
         })
-        .sort((a, b) => a.dist - b.dist)[0];
+        .sort((a, b) => {
+          const aScore = a.dist - (a.target.health < 40 ? 1.2 : 0);
+          const bScore = b.dist - (b.target.health < 40 ? 1.2 : 0);
+          return aScore - bScore;
+        })[0];
 
       if (visible) {
         const { target, dist } = visible;
         if (actor.targetId !== target.id) {
           actor.targetId = target.id;
-          const reactionScale = this.options.difficulty === 'easy' ? 1.8 : this.options.difficulty === 'hard' ? 0.32 : 1;
+          const reactionScale = this.options.difficulty === 'easy' ? 1.8 : elite ? 0.18 : 1;
           actor.reaction = (0.4 + Math.random() * 0.5) * reactionScale + actor.blindFor;
         }
         actor.reaction -= dt;
         const desired = angleTo(target.x - actor.x, target.z - actor.z);
-        actor.yaw += angleDiff(desired, actor.yaw) * Math.min(1, dt * (actor.blindFor > 0 ? 1.5 : this.options.difficulty === 'easy' ? 2.8 : this.options.difficulty === 'hard' ? 11 : 5));
+        actor.yaw += angleDiff(desired, actor.yaw) * Math.min(1, dt * (actor.blindFor > 0 ? 1.5 : this.options.difficulty === 'easy' ? 2.8 : elite ? 14 : 5));
         if (actor.strafeIn <= 0) {
           actor.strafe = Math.random() > 0.5 ? 1 : -1;
           actor.strafeIn = 0.8 + Math.random() * 1.5;
         }
-        const hard = this.options.difficulty === 'hard';
-        const approach = dist > 13 ? (hard ? 2.35 : 1.8) : dist < 5 ? (hard ? -1.05 : -0.7) : 0;
-        const lateral = hard ? 1.5 : 1.05;
+        const hard = elite;
+        const approach = dist > (hard ? 12 : 13) ? (hard ? 2.7 : 1.8) : dist < (hard ? 7 : 5) ? (hard ? -1.25 : -0.7) : 0;
+        const lateral = hard ? 1.9 : 1.05;
         const dx = (-Math.sin(actor.yaw) * approach + Math.cos(actor.yaw) * actor.strafe * lateral) * dt;
         const dz = (-Math.cos(actor.yaw) * approach - Math.sin(actor.yaw) * actor.strafe * lateral) * dt;
         const beforeX = actor.x;
         const beforeZ = actor.z;
         this.moveActor(actor, dx, dz);
         actor.moving = Math.hypot(actor.x - beforeX, actor.z - beforeZ) > 0.001;
-        if (actor.grenadeIn <= 0 && dist >= 5 && dist <= 17 && actor.blindFor <= 0 && Math.random() < (this.options.difficulty === 'easy' ? 0.018 : this.options.difficulty === 'hard' ? 0.12 : 0.045)) {
+        if (actor.grenadeIn <= 0 && dist >= 5 && dist <= 17 && actor.blindFor <= 0 && Math.random() < (this.options.difficulty === 'easy' ? 0.018 : elite ? 0.18 : 0.045)) {
           const kind: GrenadeKind = dist > 10 && actor.flashLeft > 0 ? 'flash' : 'frag';
           const aim = new THREE.Vector3(target.x - actor.x, 0.18, target.z - actor.z).normalize();
           const grenadeId = this.spawnGrenade(actor, kind, aim);
@@ -1182,12 +1187,12 @@ export class BreachEngine {
             type: 'grenade-thrown', id: grenadeId, from: actor.id, kind, round: this.round,
             x: actor.x, z: actor.z, dx: aim.x, dy: aim.y, dz: aim.z,
           });
-          actor.grenadeIn = (this.options.difficulty === 'easy' ? 18 : this.options.difficulty === 'hard' ? 9 : 13) + Math.random() * 5;
+          actor.grenadeIn = (this.options.difficulty === 'easy' ? 18 : elite ? 8 : 13) + Math.random() * (elite ? 3 : 5);
         }
         if (actor.reaction <= 0 && actor.shootIn <= 0 && actor.reloadFor <= 0 && actor.blindFor <= 0) {
           const weapon = WEAPONS.find((entry) => entry.id === actor.weaponId) ?? WEAPONS[0];
-          const aimScale = this.options.difficulty === 'easy' ? 1.8 : this.options.difficulty === 'hard' ? 0.62 : 1;
-          actor.shootIn = (Math.max(0.3, weapon.rate * 3.2) + Math.random() * 0.3) * aimScale;
+          const aimScale = this.options.difficulty === 'easy' ? 1.8 : elite ? 0.48 : 1;
+          actor.shootIn = (Math.max(0.28, weapon.rate * 2.9) + Math.random() * (elite ? 0.12 : 0.3)) * aimScale;
           this.botFire(actor, target, dist);
         }
       } else if (this.isTdm) {
@@ -1509,13 +1514,13 @@ export class BreachEngine {
     const destination = new THREE.Vector3(target.x, 1.2, target.z);
     const difficulty = this.options.difficulty;
     const chance = difficulty === 'hard'
-      ? clamp(0.78 - range * 0.004, 0.64, 0.76)
+      ? clamp(0.88 - range * 0.0035, 0.74, 0.86)
       : difficulty === 'normal'
         ? clamp(0.38 - range * 0.006, 0.22, 0.36)
         : clamp(0.20 - range * 0.006, 0.10, 0.19);
     const hit = Math.random() < chance;
     if (!hit) {
-      const missSpread = difficulty === 'hard' ? 0.72 : difficulty === 'normal' ? 1.8 : 2.6;
+      const missSpread = difficulty === 'hard' ? 0.48 : difficulty === 'normal' ? 1.8 : 2.6;
       destination.x += (Math.random() - 0.5) * missSpread;
       destination.y += (Math.random() - 0.5) * missSpread * 0.5;
       destination.z += (Math.random() - 0.5) * missSpread;
@@ -1524,7 +1529,7 @@ export class BreachEngine {
     this.spawnParticles(origin, false, 3);
     if (hit) {
       this.spawnParticles(destination, true, 4);
-      const damageScale = difficulty === 'hard' ? 0.70 : difficulty === 'normal' ? 0.44 : 0.32;
+      const damageScale = difficulty === 'hard' ? 0.78 : difficulty === 'normal' ? 0.44 : 0.32;
       const damage = weapon.kind === 'shotgun'
         ? Math.round((range < 9 ? 21 : 9) * (difficulty === 'hard' ? 1 : difficulty === 'normal' ? 0.8 : 0.65))
         : Math.max(7, Math.round(weapon.damage * damageScale));
