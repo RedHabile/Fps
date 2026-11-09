@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { ARMORS, SKINS, TDM_DURATION, TDM_KILL_TARGET, TDM_RESPAWN_DELAY, WEAPONS, isPistolWeapon, slotForWeapon, type ArmorId, type Difficulty, type GameMode, type GrenadeKind, type MapId, type MatchResult, type Skin, type SkinId, type Team, type Weapon, type WeaponSlot, type WeaponId } from './data';
 import { type NetworkMessage, type RoomConnection } from './network';
-import { blocked, buildWorld, findPath, lineClear, obstaclesForMap, SITES, type Obstacle } from './world';
+import { blocked, buildWorld, findPath, lineClear, obstaclesForMap, SITES, MAP_SCALE, type Obstacle } from './world';
 import { buildOperator, setOperatorWeapon, type OperatorRig } from './character';
 import { buildViewWeapon } from './weapons3d';
 
@@ -416,7 +416,7 @@ export class BreachEngine {
 
   private spawnPoint(actor: Actor) {
     const attacking = this.isTdm ? actor.team === 'blue' : actor.team === this.attackingTeam;
-    return { x: (actor.index - 2) * 2, z: attacking ? 27.8 : -28.5, yaw: attacking ? 0 : Math.PI };
+    return { x: (actor.index - 2) * 2 * MAP_SCALE, z: (attacking ? 27.8 : -28.5) * MAP_SCALE, yaw: attacking ? 0 : Math.PI };
   }
 
   private resetActorLoadout(actor: Actor, round: number) {
@@ -974,8 +974,8 @@ export class BreachEngine {
   private moveActor(actor: Actor, dx: number, dz: number) {
     if (!blocked(actor.x + dx, actor.z, 0.55, this.obstacles)) actor.x += dx;
     if (!blocked(actor.x, actor.z + dz, 0.55, this.obstacles)) actor.z += dz;
-    actor.x = clamp(actor.x, -32, 32);
-    actor.z = clamp(actor.z, -31.5, 31.5);
+    actor.x = clamp(actor.x, -32 * MAP_SCALE, 32 * MAP_SCALE);
+    actor.z = clamp(actor.z, -31.5 * MAP_SCALE, 31.5 * MAP_SCALE);
   }
 
   private frame = (now: number) => {
@@ -1773,7 +1773,7 @@ export class BreachEngine {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     const size = canvas.width;
-    const scale = size / 70;
+    const scale = size / (70 * MAP_SCALE);
     const point = (x: number, z: number) => ({ x: size / 2 + x * scale, y: size / 2 + z * scale });
     ctx.clearRect(0, 0, size, size);
     ctx.fillStyle = 'rgba(10, 21, 25, .84)';
