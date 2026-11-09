@@ -243,10 +243,7 @@ function App() {
 
     <div className="lobby-content">
       <section className="hero-copy" aria-label="Breach Point Search and Destroy">
-        <div className="hero-eyebrow"><span className="eyebrow-line" /> SAISON 01 <i /> {selectedMode === 'sd' ? 'SEARCH & DESTROY' : 'COMBAT EN ÉQUIPE'}</div>
-        <h1>BREACH<br /><span>POINT</span><i>.</i></h1>
-        <div className="hero-heading-rule"><span /> <b>UNE MISSION. DEUX DESTINS.</b></div>
-        <p>Une vie. Deux sites. Aucune seconde chance.<br />Entrez dans l'ar&egrave;ne et faites chaque tir compter.</p>
+        <h1 className="hero-game-title">BREACH<br /><span>POINT</span><i>.</i></h1>
         <div className="mode-picker" role="group" aria-label="Choisir le mode de jeu">{MODES.map((entry) => <button key={entry.id} className={`mode-choice ${selectedMode === entry.id ? 'active' : ''}`} onClick={() => setSelectedMode(entry.id)}><strong>{entry.name}</strong><small>{entry.tagline}</small></button>)}</div>
         <div className="difficulty-picker" role="group" aria-label="Choisir la difficulté"><span>DIFFICULTÉ DE L'IA</span>{DIFFICULTIES.map((entry) => <button key={entry.id} className={selectedDifficulty === entry.id ? 'active' : ''} onClick={() => setSelectedDifficulty(entry.id)}><strong>{entry.name}</strong><small>{entry.tagline}</small></button>)}</div>
         <div className="hero-actions"><button className="primary-button deploy-button" onClick={startSolo}><span className="play-box"><Play size={15} fill="currentColor" /></span><span>LANCER LA PARTIE<small>JOUER CONTRE L'IA</small></span><ArrowRight className="button-arrow" size={20} /></button><button className="secondary-button" onClick={() => setPanel('room')}><UsersRound size={19} /><span>SALON PRIV&Eacute;<small>JOUER AVEC DES AMIS</small></span></button></div>
