@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ArrowDownRight, ArrowRight, Check, CircleHelp, ClipboardList, Copy, Crosshair, LockKeyhole,
+  ArrowDownRight, ArrowRight, Award, Check, CircleHelp, ClipboardList, Copy, Crosshair, LockKeyhole,
   Play, Radio, RotateCcw, Settings2, ShoppingBag, Target, Trophy, UsersRound, Volume2, VolumeX, X,
 } from 'lucide-react';
 import GameScreen from './game/GameScreen';
-import { currentQuests, DIFFICULTIES, formatNumber, loadProfile, MAPS, MODES, QUESTS, saveProfile, SKINS, type Difficulty, type GameMode, type MapId, type MatchResult, type Profile, type Quest, type Skin, type SkinId } from './game/data';
+import { ACHIEVEMENTS, currentQuests, DIFFICULTIES, formatNumber, isSkinUnlocked, levelForXp, loadProfile, MAPS, MODES, questTimeRemaining, QUESTS, saveProfile, skinUnlockText, SKINS, type Difficulty, type GameMode, type MapId, type MatchResult, type Profile, type Quest, type Skin, type SkinId } from './game/data';
 import { randomRoomCode, RoomConnection, type RoomStatus } from './game/network';
 import WeaponArt from './game/WeaponArt';
 import TouchSettings from './game/TouchSettings';
 import { defaultTouchLayout, DEFAULT_TOUCH_SIZES, loadTouchCustom, saveTouchCustom, type TouchControl, type TouchPoint, type TouchSizes } from './game/touchLayout';
 
-type Panel = 'play' | 'arsenal' | 'quests' | 'scores' | 'room' | 'help' | 'settings';
+type Panel = 'play' | 'arsenal' | 'quests' | 'achievements' | 'scores' | 'room' | 'help' | 'settings';
 
 function BrandMark({ small = false }: { small?: boolean }) {
   return <div className={`brand-lockup ${small ? 'brand-small' : ''}`}>
@@ -35,6 +35,7 @@ function App() {
   const [selectedMode, setSelectedMode] = useState<GameMode>('sd');
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('normal');
   const [viewport, setViewport] = useState(() => ({ width: window.innerWidth, height: window.innerHeight }));
+  const [questClock, setQuestClock] = useState(() => Date.now());
   const roomRef = useRef<RoomConnection | null>(null);
 
   useEffect(() => { saveProfile(profile); }, [profile]);
@@ -46,10 +47,14 @@ function App() {
   }, []);
   useEffect(() => () => { roomRef.current?.destroy(); }, []);
   useEffect(() => {
-    const interval = setInterval(() => setProfile((previous) => {
-      const quests = currentQuests(previous.quests);
-      return quests === previous.quests ? previous : { ...previous, quests };
-    }), 60000);
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setQuestClock(now);
+      setProfile((previous) => {
+        const quests = currentQuests(previous.quests, now);
+        return quests === previous.quests ? previous : { ...previous, quests };
+      });
+    }, 1000);
     return () => clearInterval(interval);
   }, []);
   useEffect(() => {
@@ -163,30 +168,35 @@ function App() {
 
   const recordResult = useCallback((result: MatchResult) => {
     setProfile((previous) => {
-      const records = [...previous.records, {
-        points: result.points,
-        kills: result.kills,
-        won: result.won,
-        date: new Date().toLocaleDateString('fr-FR'),
-        mode: result.mode,
-      }].sort((a, b) => b.points - a.points).slice(0, 10);
+      const records = [...previous.records, { points: result.points, kills: result.kills, won: result.won, date: new Date().toLocaleDateString('fr-FR'), mode: result.mode }].sort((x, y) => y.points - x.points).slice(0, 10);
       const quests = currentQuests(previous.quests);
       const roundsWon = result.mode === 'tdm' ? (result.won ? 1 : 0) : result.blueScore;
-      return { ...previous, credits: previous.credits + result.credits, records, matches: previous.matches + 1, wins: previous.wins + (result.won ? 1 : 0), quests: { ...quests, matches: quests.matches + 1, kills: quests.kills + result.kills, rounds: quests.rounds + roundsWon } };
+      const matches = previous.matches + 1, wins = previous.wins + (result.won ? 1 : 0);
+      const totalKills = previous.totalKills + result.kills;
+      const hardWins = previous.hardWins + (selectedDifficulty === 'hard' && result.won ? 1 : 0);
+      const bestMatchKills = Math.max(previous.bestMatchKills, result.kills);
+      const xp = previous.xp + 100 + result.kills * 25 + (result.won ? 150 : 0);
+      const level = levelForXp(xp);
+      const metrics = { wins, matches, kills: totalKills, hardWins, bestMatchKills, level };
+      const achievements = Array.from(new Set([...previous.achievements, ...ACHIEVEMENTS.filter((item) => metrics[item.metric] >= item.target).map((item) => item.id)]));
+      const bonusSkins = SKINS.filter((skin) => (skin.unlockLevel !== undefined && level >= skin.unlockLevel) || (skin.achievementId !== undefined && achievements.includes(skin.achievementId))).map((skin) => skin.id);
+      const nextQuests = { ...quests, matches: quests.matches + 1, kills: quests.kills + result.kills, rounds: quests.rounds + roundsWon, wins: quests.wins + (result.won ? 1 : 0), points: quests.points + result.points, hardWins: quests.hardWins + (selectedDifficulty === 'hard' && result.won ? 1 : 0) };
+      return { ...previous, credits: previous.credits + result.credits, records, matches, wins, xp, totalKills, hardWins, bestMatchKills, achievements, ownedSkins: Array.from(new Set([...previous.ownedSkins, ...bonusSkins])), quests: nextQuests };
     });
-  }, []);
+  }, [selectedDifficulty]);
 
   const chooseSkin = (skin: Skin) => {
     if (profile.ownedSkins.includes(skin.id)) {
       setProfile((previous) => ({ ...previous, equippedSkin: skin.id }));
-      setToast(`${skin.name} \u00c9QUIP\u00c9`);
+      setToast(`${skin.name} ÉQUIPÉ`);
+    } else if (isSkinUnlocked(skin, profile)) {
+      setProfile((previous) => ({ ...previous, ownedSkins: [...previous.ownedSkins, skin.id], equippedSkin: skin.id }));
+      setToast(`${skin.name} DÉVERROUILLÉ`);
+    } else if (skin.unlockLevel || skin.achievementId) {
+      setToast(`VERROUILLÉ : ${skinUnlockText(skin)}`);
     } else if (profile.credits >= skin.price) {
-      setProfile((previous) => {
-        if (previous.ownedSkins.includes(skin.id)) return { ...previous, equippedSkin: skin.id };
-        if (previous.credits < skin.price) return previous;
-        return { ...previous, credits: previous.credits - skin.price, ownedSkins: [...previous.ownedSkins, skin.id], equippedSkin: skin.id };
-      });
-      setToast(`${skin.name} D\u00c9VERROUILL\u00c9`);
+      setProfile((previous) => ({ ...previous, credits: previous.credits - skin.price, ownedSkins: [...previous.ownedSkins, skin.id], equippedSkin: skin.id }));
+      setToast(`${skin.name} DÉVERROUILLÉ`);
     }
   };
 
@@ -212,7 +222,11 @@ function App() {
   const equippedSkin = SKINS.find((skin) => skin.id === profile.equippedSkin) ?? SKINS[0];
   const activeSkin = SKINS.find((skin) => skin.id === selectedSkin) ?? SKINS[0];
   const quests = currentQuests(profile.quests);
-  const claimable = QUESTS.some((quest) => quests[quest.id] >= quest.target && !quests.claimed.includes(quest.id));
+  const activeQuests = QUESTS.filter((quest) => quests.activeIds.includes(quest.id));
+  const claimable = activeQuests.some((quest) => quests[quest.id] >= quest.target && !quests.claimed.includes(quest.id));
+  const questRemaining = questTimeRemaining(quests, questClock);
+  const questHours = Math.floor(questRemaining / 3600000), questMinutes = Math.floor((questRemaining % 3600000) / 60000), questSeconds = Math.floor((questRemaining % 60000) / 1000);
+  const playerLevel = levelForXp(profile.xp), xpProgress = profile.xp % 500;
   const activeMap = MAPS.find((map) => map.id === selectedMap) ?? MAPS[0];
   const touchLayout = touchCustom?.positions ?? defaultTouchLayout(viewport.width, viewport.height);
   const touchSizes: TouchSizes = touchCustom?.sizes ?? { ...DEFAULT_TOUCH_SIZES };
@@ -230,6 +244,7 @@ function App() {
         <button className={panel === 'play' ? 'active' : ''} onClick={() => setPanel('play')}>JOUER</button>
         <button className={panel === 'arsenal' ? 'active' : ''} onClick={() => { setSelectedSkin(profile.equippedSkin); setPanel('arsenal'); }}>BOUTIQUE</button>
         <button className={panel === 'quests' ? 'active' : ''} onClick={openQuests}>QU&Ecirc;TES{claimable && <i className="nav-notice" />}</button>
+        <button className={panel === 'achievements' ? 'active' : ''} onClick={() => setPanel('achievements')}>SUCC&Egrave;S</button>
         <button className={panel === 'scores' ? 'active' : ''} onClick={() => setPanel('scores')}>CLASSEMENT</button>
       </nav>
       <div className="header-right"><div className="season-label"><span>SAISON</span><strong>01</strong></div><div className="header-divider" /><button className="credit-display" onClick={() => { setSelectedSkin(profile.equippedSkin); setPanel('arsenal'); }} title="Ouvrir la boutique de skins"><span className="credit-icon">&#9670;</span><strong>{formatNumber(profile.credits)}</strong><small>CR</small><span className="credit-plus">+</span></button><div className="operator-avatar"><span>BP</span><i /></div></div>
@@ -263,23 +278,35 @@ function App() {
       <div className="hero-side-note"><span>{String(MAPS.findIndex((map) => map.id === selectedMap) + 1).padStart(2, '0')} / 04</span><i /><span>THE OBJECTIVE IS EVERYTHING</span></div>
     </div>
 
-    {panel !== 'play' && panel !== 'settings' && <div className="panel-backdrop" onClick={() => setPanel('play')}><section className={`menu-panel panel-${panel}`} onClick={(event) => event.stopPropagation()} aria-label={panel === 'arsenal' ? 'Boutique de skins' : panel === 'quests' ? 'Qu\u00eates' : panel === 'scores' ? 'Classement' : panel === 'room' ? 'Salon priv\u00e9' : 'Comment jouer'}>
-      <div className="panel-top"><div className="panel-kicker"><span /> BREACH POINT <i>/</i> {panel === 'arsenal' ? 'COLLECTION' : panel === 'quests' ? 'MISSIONS QUOTIDIENNES' : panel === 'scores' ? 'ARCHIVES' : panel === 'room' ? 'ESCOUADE' : 'GUIDE TACTIQUE'}</div><button className="panel-close" onClick={() => setPanel('play')} aria-label="Fermer"><X size={20} /></button></div>
+    {panel !== 'play' && panel !== 'settings' && <div className="panel-backdrop" onClick={() => setPanel('play')}><section className={`menu-panel panel-${panel}`} onClick={(event) => event.stopPropagation()} aria-label={panel === 'arsenal' ? 'Boutique de skins' : panel === 'quests' ? 'Qu\u00eates' : panel === 'achievements' ? 'Succ\u00e8s' : panel === 'scores' ? 'Classement' : panel === 'room' ? 'Salon priv\u00e9' : 'Comment jouer'}>
+      <div className="panel-top"><div className="panel-kicker"><span /> BREACH POINT <i>/</i> {panel === 'arsenal' ? 'COLLECTION' : panel === 'quests' ? 'MISSIONS QUOTIDIENNES' : panel === 'achievements' ? 'DISTINCTIONS' : panel === 'scores' ? 'ARCHIVES' : panel === 'room' ? 'ESCOUADE' : 'GUIDE TACTIQUE'}</div><button className="panel-close" onClick={() => setPanel('play')} aria-label="Fermer"><X size={20} /></button></div>
       {panel === 'arsenal' && <>
-        <div className="panel-heading"><div><h2>BOUTIQUE<span>.</span></h2><p>Des skins pour toutes vos armes. Gagnez des cr&eacute;dits en jouant et en terminant des qu&ecirc;tes.</p></div><div className="panel-balance"><small>VOTRE SOLDE</small><strong><span>&#9670;</span> {formatNumber(profile.credits)} <i>CR</i></strong></div></div>
-        <div className="weapon-grid skin-grid">{SKINS.map((skin, index) => <button key={skin.id} className={`weapon-card skin-card ${selectedSkin === skin.id ? 'selected' : ''}`} onClick={() => setSelectedSkin(skin.id)}><div className="weapon-card-top"><span>0{index + 1} / {skin.rarity}</span>{profile.equippedSkin === skin.id ? <b><Check size={12} /> &Eacute;QUIP&Eacute;</b> : profile.ownedSkins.includes(skin.id) ? <b>ACQUIS</b> : <LockKeyhole size={14} />}</div><WeaponArt id="viper" skin={skin} /><div className="weapon-card-bottom"><strong>{skin.name}</strong><span>{skin.price === 0 ? 'INCLUS' : <><i>&#9670;</i> {formatNumber(skin.price)} CR</>}</span></div></button>)}</div>
-        <div className="weapon-detail skin-detail"><div><small>SKIN S&Eacute;LECTIONN&Eacute; / {activeSkin.rarity}</small><h3>{activeSkin.name}</h3><p>{activeSkin.description}</p></div><div className="skin-colors"><span style={{ background: activeSkin.body }} /><span style={{ background: activeSkin.detail }} /><span style={{ background: activeSkin.accent }} /><small>TOUTES LES ARMES</small></div><button className="primary-button purchase-button" disabled={profile.equippedSkin === activeSkin.id || (!profile.ownedSkins.includes(activeSkin.id) && profile.credits < activeSkin.price)} onClick={() => chooseSkin(activeSkin)}>{profile.equippedSkin === activeSkin.id ? <><Check size={17} /> &Eacute;QUIP&Eacute;</> : profile.ownedSkins.includes(activeSkin.id) ? <> &Eacute;QUIPER <ArrowRight size={17} /></> : profile.credits < activeSkin.price ? 'CR\u00c9DITS INSUFFISANTS' : <>ACHETER LE SKIN <ArrowRight size={17} /></>}</button></div>
+        <div className="panel-heading"><div><h2>BOUTIQUE<span>.</span></h2><p>38 skins à collectionner. Progressez, réussissez des défis extrêmes ou dépensez vos crédits.</p></div><div className="panel-balance"><small>VOTRE SOLDE</small><strong><span>&#9670;</span> {formatNumber(profile.credits)} <i>CR</i></strong></div></div>
+        <div className="profile-progression"><div className="profile-level"><span>NIVEAU OPÉRATEUR</span><strong>{playerLevel}</strong></div><div className="profile-xp"><div><b>{formatNumber(xpProgress)} / 500 XP</b><small>{formatNumber(profile.xp)} XP AU TOTAL</small></div><div className="quest-progress"><i style={{ width: `${xpProgress / 500 * 100}%` }} /></div></div><div className="profile-achievement-count"><strong>{profile.achievements.length}/{ACHIEVEMENTS.length}</strong><small>SUCCÈS</small></div></div>
+        <div className="weapon-grid skin-grid">{SKINS.map((skin, index) => { const unlocked = isSkinUnlocked(skin, profile); return <button key={skin.id} className={`weapon-card skin-card ${selectedSkin === skin.id ? 'selected' : ''} ${unlocked ? 'skin-unlocked' : 'skin-locked'}`} onClick={() => setSelectedSkin(skin.id)}><div className="weapon-card-top"><span>{String(index + 1).padStart(2, '0')} / {skin.rarity}</span>{profile.equippedSkin === skin.id ? <b><Check size={12} /> ÉQUIPÉ</b> : profile.ownedSkins.includes(skin.id) ? <b>ACQUIS</b> : unlocked ? <b>DISPONIBLE</b> : <b className="skin-lock-label"><LockKeyhole size={11} /> {skinUnlockText(skin)}</b>}</div><WeaponArt id="viper" skin={skin} /><div className="weapon-card-bottom"><strong>{skin.name}</strong><span>{skin.unlockLevel ? skinUnlockText(skin) : skin.achievementId ? 'SUCCÈS' : skin.price === 0 ? 'INCLUS' : <><i>&#9670;</i> {formatNumber(skin.price)} CR</>}</span></div></button>; })}</div>
+        <div className="weapon-detail skin-detail"><div><small>SKIN S&Eacute;LECTIONN&Eacute; / {activeSkin.rarity}</small><h3>{activeSkin.name}</h3><p>{activeSkin.description}</p></div><div className="skin-colors"><span style={{ background: activeSkin.body }} /><span style={{ background: activeSkin.detail }} /><span style={{ background: activeSkin.accent }} /><small>TOUTES LES ARMES</small></div><button className="primary-button purchase-button" disabled={profile.equippedSkin === activeSkin.id || (!isSkinUnlocked(activeSkin, profile) && (!!activeSkin.unlockLevel || !!activeSkin.achievementId || profile.credits < activeSkin.price))} onClick={() => chooseSkin(activeSkin)}>{profile.equippedSkin === activeSkin.id ? <><Check size={17} /> &Eacute;QUIP&Eacute;</> : profile.ownedSkins.includes(activeSkin.id) ? <> &Eacute;QUIPER <ArrowRight size={17} /></> : profile.credits < activeSkin.price ? 'CR\u00c9DITS INSUFFISANTS' : <>ACHETER LE SKIN <ArrowRight size={17} /></>}</button></div>
         <div className="panel-footnote"><span className="status-dot" /> SKINS COSM&Eacute;TIQUES CONSERV&Eacute;S SUR CET APPAREIL / SANS AVANTAGE DE COMBAT</div>
       </>}
       {panel === 'quests' && <>
-        <div className="panel-heading"><div><h2>VOS QU&Ecirc;TES<span>.</span></h2><p>Relevez les d&eacute;fis du jour et r&eacute;cup&eacute;rez des cr&eacute;dits pour vos skins.</p></div><div className="quest-reset"><small>RENOUVELLEMENT</small><strong>CHAQUE JOUR</strong></div></div>
-        <div className="quest-list">{QUESTS.map((quest, index) => {
+        <div className="panel-heading"><div><h2>VOS QU&Ecirc;TES<span>.</span></h2><p>Trois missions aléatoires, renouvelées exactement toutes les 24 heures.</p></div><div className="quest-reset"><small>PROCHAIN RENOUVELLEMENT</small><strong>{String(questHours).padStart(2, '0')}:{String(questMinutes).padStart(2, '0')}:{String(questSeconds).padStart(2, '0')}</strong></div></div>
+        <div className="quest-list">{activeQuests.map((quest, index) => {
           const progress = Math.min(quests[quest.id], quest.target);
           const claimed = quests.claimed.includes(quest.id);
           const complete = progress >= quest.target;
           return <div className={`quest-row ${complete && !claimed ? 'complete' : ''}`} key={quest.id}><span className="quest-index">0{index + 1}</span><div className="quest-copy"><strong>{quest.name}</strong><p>{quest.description}</p><div className="quest-progress"><i style={{ width: `${progress / quest.target * 100}%` }} /></div></div><div className="quest-count"><strong>{progress}<span> / {quest.target}</span></strong><small>PROGRESSION</small></div><button className="quest-claim" disabled={!complete || claimed} onClick={() => claimQuest(quest)}>{claimed ? <><Check size={14} /> R&Eacute;CUP&Eacute;R&Eacute;</> : complete ? <>R&Eacute;CUP&Eacute;RER <span>+{quest.reward} CR</span></> : <>R&Eacute;COMPENSE <span>+{quest.reward} CR</span></>}</button></div>;
         })}</div>
-        <div className="panel-footnote"><span className="status-dot" /> PROGRESSION COMPTABILIS&Eacute;E EN FIN DE PARTIE / R&Eacute;INITIALIS&Eacute;E CHAQUE JOUR</div>
+        <div className="panel-footnote"><span className="status-dot" /> 3 MISSIONS ALÉATOIRES / RENOUVELLEMENT AUTOMATIQUE TOUTES LES 24 HEURES</div>
+      </>}
+      {panel === 'achievements' && <>
+        <div className="panel-heading"><div><h2>SUCCÈS<span>.</span></h2><p>Défis permanents. Certains skins exclusifs ne s'obtiennent qu'en les terminant.</p></div><div className="record-summary"><div><small>DÉBLOQUÉS</small><strong>{profile.achievements.length}/{ACHIEVEMENTS.length}</strong></div><div><small>NIVEAU</small><strong>{playerLevel}</strong></div></div></div>
+        <div className="achievement-list">{ACHIEVEMENTS.map((achievement) => {
+          const unlocked = profile.achievements.includes(achievement.id);
+          const value = achievement.metric === 'wins' ? profile.wins : achievement.metric === 'matches' ? profile.matches : achievement.metric === 'kills' ? profile.totalKills : achievement.metric === 'hardWins' ? profile.hardWins : achievement.metric === 'bestMatchKills' ? profile.bestMatchKills : playerLevel;
+          const progress = Math.min(value, achievement.target);
+          const rewardSkin = SKINS.find((skin) => skin.achievementId === achievement.id);
+          return <div className={\`achievement-row \${unlocked ? 'unlocked' : ''}\`} key={achievement.id}><div className="achievement-medal"><Award size={22} /></div><div className="achievement-copy"><strong>{achievement.name}</strong><p>{achievement.description}</p><div className="quest-progress"><i style={{ width: \`\${progress / achievement.target * 100}%\` }} /></div><small>{progress} / {achievement.target}</small></div><div className="achievement-reward"><b>{unlocked ? 'DÉBLOQUÉ' : 'EN COURS'}</b><span>{rewardSkin ? \`SKIN \${rewardSkin.name}\` : 'DISTINCTION'}</span></div></div>;
+        })}</div>
+        <div className="panel-footnote"><span className="status-dot" /> SUCCÈS PERMANENTS / SKINS EXCLUSIFS CONSERVÉS SUR CET APPAREIL</div>
       </>}
       {panel === 'scores' && <>
         <div className="panel-heading"><div><h2>VOS ARCHIVES<span>.</span></h2><p>Chaque mission laisse une trace. Voici vos meilleurs r&eacute;sultats.</p></div><div className="record-summary"><div><small>MISSIONS</small><strong>{profile.matches}</strong></div><div><small>VICTOIRES</small><strong>{profile.wins}</strong></div></div></div>
