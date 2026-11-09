@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { ArrowLeft, Bomb, Crosshair, Flashlight, Pause, Play, Repeat2, RotateCcw, Settings2, Shield, Target, Zap } from 'lucide-react';
-import { ARMORS, formatNumber, MAPS, TDM_KILL_TARGET, WEAPONS, type Difficulty, type GameMode, type MapId, type MatchResult, type Skin } from './data';
+import { ARMORS, formatNumber, isPistolWeapon, MAPS, TDM_KILL_TARGET, WEAPONS, type Difficulty, type GameMode, type MapId, type MatchResult, type Skin } from './data';
 import { BreachEngine, type GameHUD } from './engine';
 import { type RoomConnection } from './network';
 import WeaponArt from './WeaponArt';
@@ -194,8 +194,9 @@ export default function GameScreen({ skin, mapId, mode, difficulty, room, sound,
           <div className="buy-topline"><span><i /> {hud.overtime ? 'PROLONGATION' : 'PR\u00c9PARATION'} / MANCHE {String(hud.round).padStart(2, '0')}</span><div className="buy-top-actions"><span>{hud.attacking ? 'ATTAQUE' : 'D\u00c9FENSE'} <b>//</b> {MAPS.find((map) => map.id === mapId)?.name}</span><button className="buy-pause" aria-label="Pause pendant l'achat" onClick={() => setPaused(true)}><Pause size={14} fill="currentColor" /></button></div></div>
           <div className="buy-heading"><div><h2>CHOISISSEZ<br /><em>VOTRE ARME.</em></h2><p>{hud.round === 1 && hud.mode === 'sd' ? 'Premi\u00e8re manche : armes de poing uniquement.' : hud.overtime ? 'Prolongation : changement de c\u00f4t\u00e9 \u00e0 chaque manche.' : hud.round > 1 ? 'Survivants : arsenal conserv\u00e9. 1 arme de poing + 1 arme principale.' : '15 secondes pour pr\u00e9parer votre \u00e9quipement.'}</p></div><div className="buy-wallet"><small>BUDGET TACTIQUE</small><strong><span>&#9670;</span> {formatNumber(hud.roundCredits)}</strong><small>CR&Eacute;DITS DE PARTIE</small></div></div>
           <div className="buy-grid">{WEAPONS.map((weapon, index) => {
-            const selected = hud.weaponId === weapon.id;
-            const currentPrice = WEAPONS.find((item) => item.id === hud.weaponId)?.price ?? 0;
+            const pistol = isPistolWeapon(weapon.kind);
+            const selected = (pistol ? hud.sidearmId : hud.primaryId) === weapon.id;
+            const currentPrice = WEAPONS.find((item) => item.id === (pistol ? hud.sidearmId : hud.primaryId))?.price ?? 0;
             const affordable = weapon.price <= hud.roundCredits + currentPrice;
             const restricted = hud.round === 1 && weapon.kind !== 'pistol' && weapon.kind !== 'heavy-pistol';
             return <button key={weapon.id} className={`buy-card ${selected ? 'selected' : ''}`} disabled={hud.ready || !affordable || restricted} onClick={() => engineRef.current?.buyWeapon(weapon.id)}>
@@ -220,8 +221,9 @@ export default function GameScreen({ skin, mapId, mode, difficulty, room, sound,
           <div className="buy-topline"><span><i /> ÉLIMINÉ <b>//</b> RÉAPPARITION DANS {Math.ceil(hud.respawnIn)} SEC</span><div className="buy-top-actions"><span>{hud.weaponName} <b>//</b> {MAPS.find((map) => map.id === mapId)?.name}</span></div></div>
           <div className="buy-heading"><div><h2>CHOISISSEZ<br /><em>VOTRE ARME.</em></h2><p>Votre arsenal est conservé. Modifiez-le avant de réapparaître.</p></div><div className="buy-wallet"><small>BUDGET TACTIQUE</small><strong><span>&#9670;</span> {formatNumber(hud.roundCredits)}</strong><small>CR&Eacute;DITS DE PARTIE</small></div></div>
           <div className="buy-grid">{WEAPONS.map((weapon, index) => {
-            const selected = hud.weaponId === weapon.id;
-            const currentPrice = WEAPONS.find((item) => item.id === hud.weaponId)?.price ?? 0;
+            const pistol = isPistolWeapon(weapon.kind);
+            const selected = (pistol ? hud.sidearmId : hud.primaryId) === weapon.id;
+            const currentPrice = WEAPONS.find((item) => item.id === (pistol ? hud.sidearmId : hud.primaryId))?.price ?? 0;
             const affordable = weapon.price <= hud.roundCredits + currentPrice;
             return <button key={weapon.id} className={`buy-card ${selected ? 'selected' : ''}`} disabled={!affordable} onClick={() => engineRef.current?.buyWeapon(weapon.id)}>
               <span className="buy-card-top"><span>0{index + 1} / {weapon.family}</span><b>{selected ? 'S\u00c9LECTIONN\u00c9' : !affordable ? 'FONDS INSUFFISANTS' : 'CHOISIR'}</b></span>
