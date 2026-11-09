@@ -54,6 +54,13 @@ interface Actor extends OperatorRig {
   diedThisRound: boolean;
 }
 
+interface AmmoPickup {
+  group: THREE.Group;
+  x: number;
+  z: number;
+  respawnFor: number;
+}
+
 interface Bomb {
   site: SiteId;
   time: number;
@@ -293,6 +300,7 @@ export class BreachEngine {
   private localReady = false;
   private weapon = WEAPONS[0];
   private grenades: Grenade[] = [];
+  private ammoPickups: AmmoPickup[] = [];
   private grenadeSeq = 0;
   private flashWhite = 0;
   private tdmTime = TDM_DURATION;
@@ -345,6 +353,7 @@ export class BreachEngine {
     options.container.appendChild(this.renderer.domElement);
     this.obstacles = obstaclesForMap(options.mapId);
     this.colliders = buildWorld(this.scene, options.mapId);
+    this.createAmmoPickups();
     const weaponModel = buildViewWeapon(this.weapon, options.skin);
     this.gun = weaponModel.group;
     this.muzzleFlash = weaponModel.flash;
@@ -404,6 +413,70 @@ export class BreachEngine {
       this.scene.add(actor.group);
       return actor;
     });
+  }
+
+  private createAmmoPickups() {
+    const candidates = [
+      [-25, -25], [25, -25], [-25, 0], [25, 0],
+      [-25, 25], [25, 25], [-12, -25], [12, -25],
+      [-12, 25], [12, 25], [0, -25], [0, 25],
+    ];
+    const positions = candidates
+      .map(([x, z]) => ({ x: x * MAP_SCALE, z: z * MAP_SCALE }))
+      .filter((point) => !blocked(point.x, point.z, 1.35, this.obstacles))
+      .filter((point, index, all) => all.findIndex((other) =>
+        Math.hypot(other.x - point.x, other.z - point.z) < 7 * MAP_SCALE,
+      ) === index)
+      .slice(0, 8);
+
+    for (const point of positions) {
+      const group = new THREE.Group();
+      const shell = new THREE.MeshStandardMaterial({ color: 0x344d43, roughness: 0.58, metalness: 0.35 });
+      const trim = new THREE.MeshStandardMaterial({ color: 0x8ee6b5, emissive: 0x1b6848, emissiveIntensity: 0.8, roughness: 0.35 });
+      group.add(meshBox(0.82, 0.48, 0.62, shell, 0, 0.34, 0));
+      group.add(meshBox(0.58, 0.055, 0.66, trim, 0, 0.6, 0));
+      group.add(meshBox(0.12, 0.16, 0.68, trim, 0, 0.34, 0));
+      const glow = new THREE.Mesh(
+        new THREE.TorusGeometry(0.48, 0.025, 6, 24),
+        new THREE.MeshBasicMaterial({ color: 0x70ffc0, transparent: true, opacity: 0.7 }),
+      );
+      glow.rotation.x = Math.PI / 2;
+      glow.position.y = 0.06;
+      group.add(glow);
+      group.position.set(point.x, 0, point.z);
+      this.scene.add(group);
+      this.ammoPickups.push({ group, x: point.x, z: point.z, respawnFor: 0 });
+    }
+  }
+
+  private updateAmmoPickups(dt: number) {
+    const player = this.player;
+    if (!player.alive || this.phase !== 'playing') return;
+    for (const pickup of this.ammoPickups) {
+      if (pickup.respawnFor > 0) {
+        pickup.respawnFor = Math.max(0, pickup.respawnFor - dt);
+        if (pickup.respawnFor === 0) pickup.group.visible = true;
+        continue;
+      }
+      pickup.group.rotation.y += dt * 0.75;
+      pickup.group.position.y = 0.035 + Math.sin(this.elapsed * 2.4 + pickup.x) * 0.045;
+      if (Math.hypot(player.x - pickup.x, player.z - pickup.z) > 1.8) continue;
+
+      this.savePlayerAmmo();
+      const sidearm = WEAPONS.find((weapon) => weapon.id === player.sidearmId) ?? WEAPONS[0];
+      player.sidearmReserve = Math.min(sidearm.magazine * 6, player.sidearmReserve + sidearm.magazine * 2);
+      if (player.primaryId) {
+        const primary = WEAPONS.find((weapon) => weapon.id === player.primaryId);
+        if (primary) player.primaryReserve = Math.min(primary.magazine * 6, player.primaryReserve + primary.magazine * 2);
+      }
+      this.reserve = player.activeSlot === 'primary' ? player.primaryReserve : player.sidearmReserve;
+      pickup.group.visible = false;
+      pickup.respawnFor = 22;
+      this.feed = 'CAISSE DE MUNITIONS  +2 CHARGEURS';
+      this.feedFor = 2;
+      this.sound('action');
+      this.publishHud();
+    }
   }
 
   private makeBomb() {
@@ -829,6 +902,17 @@ export class BreachEngine {
   public respawnPlayer() {
     const player = this.player;
     if (!this.isTdm || this.phase !== 'playing' || player.alive) return;
+    this.savePlayerAmmo();
+    const sidearm = WEAPONS.find((weapon) => weapon.id === player.sidearmId) ?? WEAPONS[0];
+    player.sidearmAmmo = sidearm.magazine;
+    player.sidearmReserve = sidearm.magazine * 3;
+    if (player.primaryId) {
+      const primary = WEAPONS.find((weapon) => weapon.id === player.primaryId);
+      if (primary) {
+        player.primaryAmmo = primary.magazine;
+        player.primaryReserve = primary.magazine * 3;
+      }
+    }
     this.placeActor(player);
     this.equipSlot(player.activeSlot, false);
     this.yaw = player.yaw;
@@ -1011,6 +1095,7 @@ export class BreachEngine {
           } else this.time = Math.max(0, this.time - dt);
         }
         this.updatePlayer(dt);
+        this.updateAmmoPickups(dt);
         if (this.isHost) {
           this.updateRemoteActors(dt);
           this.updateBots(dt);
