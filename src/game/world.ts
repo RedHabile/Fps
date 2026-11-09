@@ -327,7 +327,7 @@ function surfaceTexture(kind: 'ground' | 'concrete' | 'metal') {
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(kind === 'ground' ? 20 : 2, kind === 'ground' ? 20 : 2);
+  texture.repeat.set((kind === 'ground' ? 20 : 2) * MAP_SCALE, (kind === 'ground' ? 20 : 2) * MAP_SCALE);
   return texture;
 }
 
@@ -351,7 +351,7 @@ export function buildWorld(scene: THREE.Scene, mapId: MapId = 'depot') {
   skyTexture.colorSpace = THREE.SRGBColorSpace;
   scene.background = indoor ? new THREE.Color(mapId === 'usine' ? 0x4b4c43 : 0x425654) : skyTexture;
   if (indoor) skyTexture.dispose();
-  scene.fog = new THREE.Fog(indoor ? 0x697a77 : mapId === 'forteresse' ? 0xb3ad96 : 0x9aada9, indoor ? 24 : 32, indoor ? 82 : 100);
+  scene.fog = new THREE.Fog(indoor ? 0x697a77 : mapId === 'forteresse' ? 0xb3ad96 : 0x9aada9, (indoor ? 24 : 32) * MAP_SCALE, (indoor ? 82 : 100) * MAP_SCALE);
   mapRoot.add(new THREE.HemisphereLight(indoor ? 0xc5ddd8 : 0xd2edeb, 0x4d5148, indoor ? 1.8 : 2.15));
   const sunlight = new THREE.DirectionalLight(indoor ? 0xffddb4 : 0xffd2a0, indoor ? 1.15 : 2.2);
   sunlight.position.set(-15, 30, 12);
