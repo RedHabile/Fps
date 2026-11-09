@@ -27,7 +27,7 @@ export function slotForWeapon(kind: Weapon['kind']): WeaponSlot {
   return isPistolWeapon(kind) ? 'sidearm' : 'primary';
 }
 export type MapId = 'depot' | 'terminal' | 'usine' | 'forteresse';
-export type SkinId = 'recruit' | 'glacier' | 'ember' | 'shadow' | 'forest' | 'gold' | 'neon' | 'arctic';
+export type SkinId = 'recruit' | 'glacier' | 'ember' | 'shadow' | 'forest' | 'gold' | 'neon' | 'arctic' | 'plasma' | 'toxic' | 'sunset' | 'ice' | 'void' | 'cyan';
 export type QuestId = 'matches' | 'kills' | 'rounds';
 export type Team = 'blue' | 'red';
 
@@ -135,6 +135,12 @@ export const SKINS: Skin[] = [
   { id: 'gold', name: 'OR SOLAIRE', rarity: '\u00c9PIQUE', description: 'Une finition m\u00e9tallique aux reflets dor\u00e9s.', price: 2600, body: '#826a35', detail: '#d2b768', accent: '#ffe8a0' },
   { id: 'neon', name: 'IMPULSION', rarity: '\u00c9PIQUE', description: 'Des accents vifs pour les op\u00e9rations nocturnes.', price: 2800, body: '#523d6f', detail: '#aa77b7', accent: '#ffb8e5' },
   { id: 'arctic', name: 'BLANC POLAIRE', rarity: 'RARE', description: 'Un rev\u00eatement clair aux d\u00e9tails bleu acier.', price: 1550, body: '#a6b9b6', detail: '#d9e5df', accent: '#80cbd4' },
+  { id: 'cyan', name: 'CYAN CORE', rarity: 'ÉPIQUE', description: 'Un noyau cyan lumineux inspiré du skin classique de SPIKE PROTOCOL.', price: 1900, body: '#0891b2', detail: '#a5f3fc', accent: '#ffffff' },
+  { id: 'plasma', name: 'PLASMA', rarity: 'LÉGENDAIRE', description: 'Un habillage violet électrique aux reflets magenta.', price: 3200, body: '#a21caf', detail: '#f0abfc', accent: '#ffffff' },
+  { id: 'toxic', name: 'TOXIC', rarity: 'ÉPIQUE', description: 'Un vert acide qui pulse comme une énergie instable.', price: 2400, body: '#4d7c0f', detail: '#bef264', accent: '#f7fee7' },
+  { id: 'sunset', name: 'SUNSET', rarity: 'ÉPIQUE', description: 'Des tons braise et cuivre aux accents orange incandescent.', price: 2600, body: '#c2410c', detail: '#fdba74', accent: '#fff7ed' },
+  { id: 'ice', name: 'ICE', rarity: 'RARE', description: 'Un revêtement bleu glacier aux reflets givrés.', price: 1750, body: '#2563eb', detail: '#bfdbfe', accent: '#ffffff' },
+  { id: 'void', name: 'VOID', rarity: 'LÉGENDAIRE', description: 'Une finition violette abyssale aux reflets spectraux.', price: 3600, body: '#6d28d9', detail: '#c4b5fd', accent: '#f5f3ff' },
 ];
 
 export interface Quest {
