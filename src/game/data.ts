@@ -4,8 +4,8 @@ export type GameMode = 'sd' | 'tdm';
 export type Difficulty = 'easy' | 'normal' | 'hard';
 export const DIFFICULTIES: { id: Difficulty; name: string; tagline: string }[] = [
   { id: 'easy', name: 'RECRUE', tagline: 'IA indulgente · réactions lentes et tirs moins précis' },
-  { id: 'normal', name: 'VÉTÉRAN', tagline: 'IA tactique · réactions et précision équilibrées' },
-  { id: 'hard', name: 'ÉLITE', tagline: 'IA redoutable · réactions rapides et tirs plus précis' },
+  { id: 'normal', name: 'NORMAL', tagline: 'IA redoutable · ancien niveau ÉLITE, réactions rapides et tirs précis' },
+  { id: 'hard', name: 'ÉLITE', tagline: 'IA extrême · réactions fulgurantes, meilleure précision et pression tactique renforcée' },
 ];
 export type WeaponSlot = 'sidearm' | 'primary';
 export type GrenadeKind = 'frag' | 'flash';
