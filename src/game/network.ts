@@ -109,8 +109,8 @@ export class RoomConnection {
   private attachHost(connection: DataConnection) {
     connection.on('open', () => {
       if (this.closed) return;
-      if (this.status.inMatch || this.status.players.length >= 10) {
-        connection.send({ type: 'rejected', reason: this.status.inMatch ? 'La partie a d\u00e9j\u00e0 commenc\u00e9.' : 'Ce salon est complet.' });
+      if (this.status.players.length >= 10) {
+        connection.send({ type: 'rejected', reason: 'Ce salon est complet.' });
         setTimeout(() => connection.close(), 250);
         return;
       }
@@ -122,7 +122,13 @@ export class RoomConnection {
       this.connections.set(connection, id);
       this.status = { ...this.status, players: [...this.status.players, { id, team: teamForSeat(id), host: false }] };
       this.publishRoster();
-      if (this.roomSettings && connection.open) connection.send({ type: 'room-settings', ...this.roomSettings });
+      // Late joiners receive the current match configuration, then the next live host snapshot.
+      if (this.status.inMatch && this.roomSettings && connection.open) {
+        connection.send({ type: 'start', ...this.roomSettings, lateJoin: true });
+      } else if (this.roomSettings && connection.open) {
+        connection.send({ type: 'room-settings', ...this.roomSettings });
+      }
+      if (this.status.inMatch) this.listeners.forEach((listener) => listener({ type: 'peer-joined', from: id }));
     });
     connection.on('data', (data) => {
       if (!data || typeof data !== 'object' || !('type' in data)) return;
