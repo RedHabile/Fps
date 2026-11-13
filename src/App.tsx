@@ -100,17 +100,30 @@ function App() {
   useEffect(() => {
     if (countdownTarget === null) return;
     let frame = 0;
+    let launched = false;
+    let lastSecond = -1;
     const tick = () => {
+      if (launched) return;
       const now = room?.getHostNow() ?? Date.now();
-      setCountdownClock(now);
+      const secondsLeft = Math.max(0, Math.ceil((countdownTarget - now) / 1000));
+      if (secondsLeft !== lastSecond) {
+        lastSecond = secondsLeft;
+        setCountdownClock(now);
+      }
       if (now >= countdownTarget) {
+        launched = true;
         setCountdownTarget(null);
         beginGame();
         return;
       }
       frame = requestAnimationFrame(tick);
     };
-    const onVisibility = () => { if (document.visibilityState === 'visible') tick(); };
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        cancelAnimationFrame(frame);
+        tick();
+      }
+    };
     tick();
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
