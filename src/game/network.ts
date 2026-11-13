@@ -1,5 +1,5 @@
 import Peer, { type DataConnection } from 'peerjs';
-import { type GameMode, type MapId, type Team } from './data';
+import { type Difficulty, type GameMode, type MapId, type Team } from './data';
 
 export type RoomRole = 'host' | 'guest';
 export type RoomStage = 'connecting' | 'waiting' | 'connected' | 'error';
@@ -46,6 +46,7 @@ export class RoomConnection {
   private statusListener: (status: RoomStatus) => void;
   private timeout: ReturnType<typeof setTimeout> | null = null;
   private closed = false;
+  private roomSettings: { mapId: MapId; gameMode: GameMode; difficulty: Difficulty } | null = null;
   status: RoomStatus;
 
   constructor(role: RoomRole, code: string, onStatus: (status: RoomStatus) => void) {
@@ -121,6 +122,7 @@ export class RoomConnection {
       this.connections.set(connection, id);
       this.status = { ...this.status, players: [...this.status.players, { id, team: teamForSeat(id), host: false }] };
       this.publishRoster();
+      if (this.roomSettings && connection.open) connection.send({ type: 'room-settings', ...this.roomSettings });
     });
     connection.on('data', (data) => {
       if (!data || typeof data !== 'object' || !('type' in data)) return;
@@ -155,8 +157,8 @@ export class RoomConnection {
       } else if (message.type === 'rejected') {
         this.update({ stage: 'error', message: typeof message.reason === 'string' ? message.reason : 'Salon indisponible.' });
       } else {
-        if (message.type === 'start') this.update({ inMatch: true });
         this.listeners.forEach((listener) => listener(message));
+        if (message.type === 'start') this.update({ inMatch: true });
       }
     });
     connection.on('close', () => {
@@ -198,10 +200,17 @@ export class RoomConnection {
     else this.send({ type: 'team-request', team });
   }
 
-  startMatch(mapId: MapId, gameMode: GameMode = 'sd', difficulty: 'easy' | 'normal' | 'hard' = 'normal') {
+  setRoomSettings(mapId: MapId, gameMode: GameMode, difficulty: Difficulty) {
+    if (this.status.role !== 'host' || this.status.inMatch) return;
+    this.roomSettings = { mapId, gameMode, difficulty };
+    this.send({ type: 'room-settings', ...this.roomSettings });
+  }
+
+  startMatch(mapId: MapId, gameMode: GameMode = 'sd', difficulty: Difficulty = 'normal') {
     if (this.status.role !== 'host' || !['waiting', 'connected'].includes(this.status.stage)) return false;
+    this.roomSettings = { mapId, gameMode, difficulty };
     this.update({ inMatch: true });
-    this.send({ type: 'start', mapId, gameMode, difficulty });
+    this.send({ type: 'start', ...this.roomSettings });
     return true;
   }
 
