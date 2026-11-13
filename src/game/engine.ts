@@ -1069,7 +1069,10 @@ export class BreachEngine {
   private frame = (now: number) => {
     if (this.destroyed) return;
     const realDt = Math.max(0, (now - (this.lastFrame || now)) / 1000);
-    const dt = Math.min(realDt, 0.05);
+    // Allow slower devices / battery-saver frame rates to advance the simulation
+    // by real elapsed time instead of artificially slowing the whole match.
+    // The cap still prevents huge physics jumps after a stalled frame.
+    const dt = Math.min(realDt, 0.1);
     this.lastFrame = now;
     if (!this.paused && !this.hostPaused) {
       this.elapsed += dt;
