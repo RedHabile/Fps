@@ -169,7 +169,7 @@ export class RoomConnection {
           clearInterval(this.clockSyncTimer);
           this.clockSyncTimer = setInterval(() => this.syncClock(), 15000);
         }
-      }, 1000);
+      }, 200);
     });
     connection.on('data', (data) => {
       if (!data || typeof data !== 'object' || !('type' in data)) return;
