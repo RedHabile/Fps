@@ -45,6 +45,10 @@ export class RoomConnection {
   private listeners = new Set<(message: NetworkMessage) => void>();
   private statusListener: (status: RoomStatus) => void;
   private timeout: ReturnType<typeof setTimeout> | null = null;
+  private clockSyncTimer: ReturnType<typeof setInterval> | null = null;
+  private clockOffsetMs = 0;
+  private clockSamples: Array<{ offset: number; rtt: number }> = [];
+  private roomStartAt: number | null = null;
   private closed = false;
   private roomSettings: { mapId: MapId; gameMode: GameMode; difficulty: Difficulty } | null = null;
   status: RoomStatus;
@@ -124,7 +128,7 @@ export class RoomConnection {
       this.publishRoster();
       // Late joiners receive the current match configuration, then the next live host snapshot.
       if (this.status.inMatch && this.roomSettings && connection.open) {
-        connection.send({ type: 'start', ...this.roomSettings, lateJoin: true });
+        connection.send({ type: 'start', ...this.roomSettings, startAt: this.roomStartAt, lateJoin: true });
       } else if (this.roomSettings && connection.open) {
         connection.send({ type: 'room-settings', ...this.roomSettings });
       }
@@ -132,9 +136,14 @@ export class RoomConnection {
     });
     connection.on('data', (data) => {
       if (!data || typeof data !== 'object' || !('type' in data)) return;
+      const message = data as NetworkMessage;
+      if (message.type === 'clock-ping' && typeof message.clientSentAt === 'number') {
+        const hostReceivedAt = Date.now();
+        if (connection.open) connection.send({ type: 'clock-pong', clientSentAt: message.clientSentAt, hostReceivedAt, hostSentAt: Date.now() });
+        return;
+      }
       const id = this.connections.get(connection);
       if (!id) return;
-      const message = data as NetworkMessage;
       if (message.type === 'team-request' && (message.team === 'blue' || message.team === 'red')) {
         this.movePlayer(id, message.team);
       } else this.listeners.forEach((listener) => listener({ ...message, from: id }));
@@ -152,9 +161,29 @@ export class RoomConnection {
 
   private attachGuest(connection: DataConnection) {
     this.hostConnection = connection;
+    connection.on('open', () => {
+      this.syncClock();
+      this.clockSyncTimer = setInterval(() => {
+        this.syncClock();
+        if (this.clockSamples.length >= 5 && this.clockSyncTimer) {
+          clearInterval(this.clockSyncTimer);
+          this.clockSyncTimer = setInterval(() => this.syncClock(), 15000);
+        }
+      }, 1000);
+    });
     connection.on('data', (data) => {
       if (!data || typeof data !== 'object' || !('type' in data)) return;
       const message = data as NetworkMessage;
+      if (message.type === 'clock-pong' && typeof message.clientSentAt === 'number' && typeof message.hostReceivedAt === 'number' && typeof message.hostSentAt === 'number') {
+        const clientReceivedAt = Date.now();
+        const rtt = Math.max(0, clientReceivedAt - message.clientSentAt);
+        const offset = ((message.hostReceivedAt + message.hostSentAt) - (message.clientSentAt + clientReceivedAt)) / 2;
+        this.clockSamples.push({ offset, rtt });
+        this.clockSamples = this.clockSamples.slice(-8);
+        const best = [...this.clockSamples].sort((a, b) => a.rtt - b.rtt)[0];
+        if (best) this.clockOffsetMs = best.offset;
+        return;
+      }
       if (message.type === 'roster' && Array.isArray(message.players) && typeof message.selfId === 'string') {
         if (this.timeout) clearTimeout(this.timeout);
         this.update({ stage: 'connected', selfId: message.selfId, players: message.players as RoomPlayer[], message: 'Connect\u00e9 au salon. Choisissez votre \u00e9quipe.' });
@@ -212,12 +241,22 @@ export class RoomConnection {
     this.send({ type: 'room-settings', ...this.roomSettings });
   }
 
-  startMatch(mapId: MapId, gameMode: GameMode = 'sd', difficulty: Difficulty = 'normal') {
+  startMatch(mapId: MapId, gameMode: GameMode = 'sd', difficulty: Difficulty = 'normal'): number | false {
     if (this.status.role !== 'host' || !['waiting', 'connected'].includes(this.status.stage)) return false;
     this.roomSettings = { mapId, gameMode, difficulty };
+    this.roomStartAt = Date.now() + 3000;
     this.update({ inMatch: true });
-    this.send({ type: 'start', ...this.roomSettings });
-    return true;
+    this.send({ type: 'start', ...this.roomSettings, startAt: this.roomStartAt });
+    return this.roomStartAt;
+  }
+
+  getHostNow() {
+    return Date.now() + (this.status.role === 'guest' ? this.clockOffsetMs : 0);
+  }
+
+  private syncClock() {
+    if (this.closed || this.status.role !== 'guest' || !this.hostConnection?.open) return;
+    this.hostConnection.send({ type: 'clock-ping', clientSentAt: Date.now() });
   }
 
   send(message: NetworkMessage) {
@@ -239,6 +278,7 @@ export class RoomConnection {
   destroy() {
     this.closed = true;
     if (this.timeout) clearTimeout(this.timeout);
+    if (this.clockSyncTimer) clearInterval(this.clockSyncTimer);
     this.listeners.clear();
     this.hostConnection?.close();
     this.connections.forEach((_id, connection) => connection.close());
