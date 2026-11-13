@@ -212,7 +212,7 @@ export default function GameScreen({ skin, mapId, mode, difficulty, room, sound,
             const affordable = armor.price <= hud.roundCredits + currentPrice;
             return <button key={armor.id} className={`armor-choice ${selected ? 'selected' : ''}`} disabled={hud.ready || !affordable} onClick={() => engineRef.current?.buyArmor(armor.id)}><span>{armor.name}</span><strong>{armor.price ? `${formatNumber(armor.price)} CR` : 'OFFERT'}</strong><small>{armor.capacity ? `${armor.capacity} ARMURE / ${Math.round(armor.absorption * 100)}%` : 'AUCUNE PROTECTION'}</small></button>;
           })}</div></div>
-          <div className="buy-footer"><div><span className="buy-countdown">{String(hud.buyTime).padStart(2, '0')}<small>SEC</small></span><p>&Eacute;limination +200 / victoire +1 000 / d&eacute;faite +700.<br />1 grenade + 1 flash offertes par manche. D&eacute;ploiement automatique apr&egrave;s 15 secondes.</p></div><button className="primary-button buy-ready" onClick={() => engineRef.current?.readyToDeploy()}>{hud.ready ? 'MODIFIER L\u2019\u00c9QUIPEMENT' : 'VALIDER L\u2019\u00c9QUIPEMENT'} <Play size={16} fill="currentColor" /></button></div>
+          <div className="buy-footer"><div><span className="buy-countdown">{String(hud.buyTime).padStart(2, '0')}<small>SEC</small></span><p>&Eacute;limination +200 / victoire +1 500 / d&eacute;faite +1 100.<br />1 grenade + 1 flash offertes par manche. D&eacute;ploiement automatique apr&egrave;s 15 secondes.</p></div><button className="primary-button buy-ready" onClick={() => engineRef.current?.readyToDeploy()}>{hud.ready ? 'MODIFIER L\u2019\u00c9QUIPEMENT' : 'VALIDER L\u2019\u00c9QUIPEMENT'} <Play size={16} fill="currentColor" /></button></div>
         </section>
       </div>}
 
