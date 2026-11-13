@@ -72,13 +72,20 @@ function App() {
   useEffect(() => {
     if (!room) return;
     return room.subscribe((message) => {
-      if (message.type === 'start' && room.status.role === 'guest') {
+      if (room.status.role !== 'guest') return;
+      if (message.type === 'room-settings' || message.type === 'start') {
         if (MAPS.some((map) => map.id === message.mapId)) setSelectedMap(message.mapId as MapId);
         if (message.gameMode === 'sd' || message.gameMode === 'tdm') setSelectedMode(message.gameMode);
         if (message.difficulty === 'easy' || message.difficulty === 'normal' || message.difficulty === 'hard') setSelectedDifficulty(message.difficulty);
       }
     });
   }, [room]);
+
+  useEffect(() => {
+    if (room?.status.role === 'host' && !room.status.inMatch) {
+      room.setRoomSettings(selectedMap, selectedMode, selectedDifficulty);
+    }
+  }, [room, selectedMap, selectedMode, selectedDifficulty]);
 
   // The guest leaves the lobby when the network layer confirms the start packet.
   // Watching the room status also prevents a missed one-off event from trapping players in the lobby.
@@ -327,6 +334,7 @@ function App() {
             })}</div></div>;
           })}</div>
           <div className="room-mode-row"><small>MODE DE LA PARTIE</small><div className="room-mode-choices">{roomStatus.role === 'host' ? MODES.map((entry) => <button key={entry.id} className={`room-mode-choice ${selectedMode === entry.id ? 'active' : ''}`} onClick={() => setSelectedMode(entry.id)}>{entry.name}</button>) : <strong>{selectedMode === 'sd' ? 'SEARCH & DESTROY' : 'COMBAT EN ÉQUIPE'}</strong>}</div></div>
+          <div className="room-mode-row"><small>DIFFICULTÉ DE L'IA</small><div className="room-mode-choices">{roomStatus.role === 'host' ? DIFFICULTIES.map((entry) => <button key={entry.id} className={`room-mode-choice ${selectedDifficulty === entry.id ? 'active' : ''}`} onClick={() => setSelectedDifficulty(entry.id)}>{entry.name}</button>) : <strong>{DIFFICULTIES.find((entry) => entry.id === selectedDifficulty)?.name ?? 'NORMAL'}</strong>}</div></div>
           <div className="room-actions">{roomStatus.role === 'host' && <button className="primary-button" disabled={!['waiting', 'connected'].includes(roomStatus.stage)} onClick={startRoom}>LANCER LA MISSION <ArrowRight size={17} /></button>}{roomStatus.role === 'guest' && roomStatus.stage === 'connected' && <span className="waiting-host">EN ATTENTE DU D&Eacute;PLOIEMENT PAR L'H&Ocirc;TE</span>}<button className="text-button" onClick={closeRoom}><RotateCcw size={15} /> QUITTER LE SALON</button></div>
         </div>}
         <div className="panel-footnote"><Radio size={13} /> CONNEXION DIRECTE ENTRE NAVIGATEURS / INTERNET REQUIS</div>
