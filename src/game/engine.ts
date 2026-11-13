@@ -1454,8 +1454,8 @@ export class BreachEngine {
       if (won && stats) stats.points += 200;
       if (actor.id === this.localId) {
         if (won) this.points += 200;
-        this.roundCredits = Math.min(9000, this.roundCredits + (won ? 1000 : 700));
-      } else this.options.room?.sendTo(actor.id, { type: 'economy', amount: won ? 1000 : 700, points: won ? 200 : 0 });
+        this.roundCredits = Math.min(9000, this.roundCredits + (won ? 1500 : 1100));
+      } else this.options.room?.sendTo(actor.id, { type: 'economy', amount: won ? 1500 : 1100, points: won ? 200 : 0 });
     });
     this.banner = winner === this.player.team ? 'MANCHE REMPORT\u00c9E' : 'MANCHE PERDUE';
     this.bannerSub = reason;
