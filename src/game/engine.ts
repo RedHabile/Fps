@@ -2017,6 +2017,16 @@ export class BreachEngine {
       this.bannerFor = 3;
       return;
     }
+    if (message.type === 'peer-joined' && this.isHost && typeof message.from === 'string') {
+      const actor = this.actors.find((entry) => entry.id === message.from);
+      if (actor) {
+        actor.bot = false;
+        actor.path = [];
+        actor.targetId = '';
+        this.humanStats.set(actor.id, this.humanStats.get(actor.id) ?? { kills: 0, points: 0 });
+      }
+      return;
+    }
     if (!this.isHost && message.type === 'host-pause') {
       this.hostPaused = Boolean(message.paused);
       this.firing = false;
