@@ -36,6 +36,8 @@ function App() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('normal');
   const [viewport, setViewport] = useState(() => ({ width: window.innerWidth, height: window.innerHeight }));
   const [questClock, setQuestClock] = useState(() => Date.now());
+  const [countdownTarget, setCountdownTarget] = useState<number | null>(null);
+  const [countdownClock, setCountdownClock] = useState(() => Date.now());
   const roomRef = useRef<RoomConnection | null>(null);
 
   useEffect(() => { saveProfile(profile); }, [profile]);
@@ -64,6 +66,7 @@ function App() {
   }, [toast]);
 
   const beginGame = useCallback(() => {
+    setCountdownTarget(null);
     setPanel('play');
     setRunId((value) => value + 1);
     setRunning(true);
@@ -77,9 +80,13 @@ function App() {
         if (MAPS.some((map) => map.id === message.mapId)) setSelectedMap(message.mapId as MapId);
         if (message.gameMode === 'sd' || message.gameMode === 'tdm') setSelectedMode(message.gameMode);
         if (message.difficulty === 'easy' || message.difficulty === 'normal' || message.difficulty === 'hard') setSelectedDifficulty(message.difficulty);
+        if (message.type === 'start') {
+          if (message.lateJoin === true) beginGame();
+          else if (typeof message.startAt === 'number') setCountdownTarget(message.startAt);
+        }
       }
     });
-  }, [room]);
+  }, [room, beginGame]);
 
   useEffect(() => {
     if (room?.status.role === 'host' && !room.status.inMatch) {
@@ -87,11 +94,30 @@ function App() {
     }
   }, [room, selectedMap, selectedMode, selectedDifficulty]);
 
-  // The guest leaves the lobby when the network layer confirms the start packet.
-  // Watching the room status also prevents a missed one-off event from trapping players in the lobby.
+  // Both players render against the same host-owned deadline. Recomputing from
+  // the deadline (rather than decrementing a counter) prevents drift and catches
+  // up immediately after a throttled or backgrounded browser tab.
   useEffect(() => {
-    if (room && room.status.role === 'guest' && roomStatus?.inMatch) beginGame();
-  }, [room, roomStatus?.inMatch, beginGame]);
+    if (countdownTarget === null) return;
+    let frame = 0;
+    const tick = () => {
+      const now = room?.getHostNow() ?? Date.now();
+      setCountdownClock(now);
+      if (now >= countdownTarget) {
+        setCountdownTarget(null);
+        beginGame();
+        return;
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    const onVisibility = () => { if (document.visibilityState === 'visible') tick(); };
+    tick();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [countdownTarget, room, beginGame]);
 
   const closeRoom = () => {
     roomRef.current?.destroy();
@@ -145,7 +171,8 @@ function App() {
   };
 
   const startRoom = () => {
-    if (room?.startMatch(selectedMap, selectedMode, selectedDifficulty)) beginGame();
+    const startAt = room?.startMatch(selectedMap, selectedMode, selectedDifficulty);
+    if (typeof startAt === 'number') setCountdownTarget(startAt);
   };
 
   const exitGame = useCallback(() => {
@@ -349,6 +376,7 @@ function App() {
       </>}
     </section></div>}
     {settingsPanel}
+    {countdownTarget !== null && <div role="status" aria-live="assertive" style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'grid', placeItems: 'center', background: 'rgba(3, 8, 13, 0.94)', color: '#f4f7f8', textAlign: 'center', fontFamily: 'inherit' }}><div style={{ display: 'grid', justifyItems: 'center', gap: 12 }}><span style={{ color: '#72d9d0', fontSize: 12, letterSpacing: '0.28em', fontWeight: 800 }}>BREACH POINT / DÉPLOIEMENT</span><strong style={{ fontSize: 'clamp(110px, 24vw, 220px)', lineHeight: 0.9, fontWeight: 900, fontVariantNumeric: 'tabular-nums', textShadow: '0 0 42px rgba(74, 218, 204, 0.28)' }}>{Math.max(1, Math.ceil((countdownTarget - countdownClock) / 1000))}</strong><span style={{ color: '#aab9c2', fontSize: 13, letterSpacing: '0.22em' }}>PRÉPAREZ-VOUS</span></div></div>}
     {toast && <div className="toast"><Check size={15} /> {toast}</div>}
   </main>;
 }
