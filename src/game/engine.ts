@@ -95,6 +95,7 @@ interface SnapshotActor {
 }
 
 interface Snapshot {
+  sequence: number;
   round: number;
   phase: Phase;
   blueScore: number;
@@ -280,6 +281,8 @@ export class BreachEngine {
   private elapsed = 0;
   private hudIn = 0;
   private networkIn = 0;
+  private snapshotSequence = 0;
+  private lastSnapshotSequence = 0;
   private mapIn = 0;
   private yaw = 0;
   private pitch = 0;
@@ -1977,6 +1980,7 @@ export class BreachEngine {
 
   private sendSnapshot() {
     const snapshot: Snapshot = {
+      sequence: ++this.snapshotSequence,
       round: this.round,
       phase: this.phase,
       blueScore: this.blueScore,
@@ -2087,7 +2091,10 @@ export class BreachEngine {
         const x = clamp(message.x, -32 * MAP_SCALE, 32 * MAP_SCALE);
         const z = clamp(message.z, -31.5 * MAP_SCALE, 31.5 * MAP_SCALE);
         if (!blocked(x, z, 0.55, this.obstacles)) {
-          actor.moving = Math.hypot(actor.targetX - x, actor.targetZ - z) > 0.02;
+          actor.moving = Math.hypot(actor.x - x, actor.z - z) > 0.02;
+          actor.x = x;
+          actor.z = z;
+          actor.yaw = message.yaw;
           actor.targetX = x;
           actor.targetZ = z;
           actor.targetYaw = message.yaw;
@@ -2106,7 +2113,10 @@ export class BreachEngine {
     }
     if (message.type === 'snapshot' && message.snapshot && typeof message.snapshot === 'object') {
       const snapshot = message.snapshot as Snapshot;
-      if (!Array.isArray(snapshot.actors) || typeof snapshot.round !== 'number') return;
+      if (!Array.isArray(snapshot.actors) || typeof snapshot.round !== 'number' ||
+        typeof snapshot.sequence !== 'number' || !Number.isFinite(snapshot.sequence)) return;
+      if (snapshot.sequence <= this.lastSnapshotSequence || snapshot.round < this.round) return;
+      this.lastSnapshotSequence = snapshot.sequence;
       if (snapshot.round !== this.round) this.startRound(snapshot.round);
       this.phase = snapshot.phase;
       this.blueScore = snapshot.blueScore;
@@ -2142,6 +2152,16 @@ export class BreachEngine {
         }
         actor.bot = data.bot;
         if (actor.id === this.localId) {
+          // Keep local prediction responsive, but correct large drift using the host's authoritative position.
+          const positionDrift = Math.hypot(actor.x - data.x, actor.z - data.z);
+          if (positionDrift > 2.25) {
+            actor.x = data.x;
+            actor.z = data.z;
+            actor.targetX = data.x;
+            actor.targetZ = data.z;
+            actor.group.position.set(data.x, 0, data.z);
+          }
+          actor.yaw = data.yaw;
           if (data.health < actor.health || (snapshot.phase !== 'buy' && data.armor < actor.armor)) {
             this.damageFor = 0.45;
             this.shake = 0.22;
