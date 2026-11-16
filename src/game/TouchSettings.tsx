@@ -131,7 +131,7 @@ export default function TouchSettings({ layout, sizes, viewport, sensitivity, bi
         <div className="touch-settings-copy"><span>01 / PERSONNALISATION</span><h3>VOTRE JEU,<br />VOS COMMANDES.</h3><p>Faites glisser les commandes sans les superposer. Les positions sont sauvegard&eacute;es sur cet appareil.</p>
           <div className="touch-size-block"><div className="touch-size-head"><span>TAILLE : {names[selected].toUpperCase()}</span><strong>{Math.round(sizes[selected] * 100)}%</strong></div><input className="touch-size-slider" type="range" min={TOUCH_SIZE_MIN} max={TOUCH_SIZE_MAX} step={0.05} value={sizes[selected]} onChange={(event) => onSize(selected, Number(event.target.value))} aria-label={`Taille du bouton ${names[selected]}`} /><div className="touch-size-row">{TOUCH_CONTROLS.map((control) => <button key={control} className={`touch-size-chip ${selected === control ? 'active' : ''}`} onClick={() => setSelected(control)}>{names[control]}</button>)}</div></div>
           <p className="touch-settings-hint">AU CLAVIER : UTILISEZ LES FL&Egrave;CHES POUR D&Eacute;PLACER UN BOUTON.</p><button className="secondary-button touch-reset" onClick={onReset} onPointerUp={(event) => touchRelease(event, onReset)}><RotateCcw size={16} /> R&Eacute;INITIALISER</button></div>
-      </div>
+      </div>}
       {tab === "touch" && <div className="panel-footnote"><span className="status-dot" /> LES CHANGEMENTS S'APPLIQUENT IMM&Eacute;DIATEMENT EN PARTIE</div>}
     </section>
   </div>;
