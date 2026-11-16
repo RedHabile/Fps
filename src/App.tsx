@@ -11,6 +11,7 @@ import { randomRoomCode, RoomConnection, type RoomStatus } from './game/network'
 import WeaponArt from './game/WeaponArt';
 import TouchSettings from './game/TouchSettings';
 import { defaultTouchLayout, DEFAULT_TOUCH_SIZES, loadTouchCustom, saveTouchCustom, type TouchControl, type TouchPoint, type TouchSizes } from './game/touchLayout';
+import { DEFAULT_CONTROL_BINDINGS, DEFAULT_MOUSE_SENSITIVITY, loadGameControls, saveGameControls, type ControlAction } from './game/controls';
 
 type Panel = 'play' | 'arsenal' | 'quests' | 'achievements' | 'room' | 'help' | 'settings';
 
@@ -36,6 +37,7 @@ function App() {
   const [code, setCode] = useState('');
   const [toast, setToast] = useState('');
   const [touchCustom, setTouchCustom] = useState(loadTouchCustom);
+  const [gameControls, setGameControls] = useState(loadGameControls);
   const [selectedMode, setSelectedMode] = useState<GameMode>('sd');
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('normal');
   const [viewport, setViewport] = useState(() => ({ width: window.innerWidth, height: window.innerHeight }));
@@ -70,6 +72,7 @@ function App() {
     return () => { active = false; };
   }, [user, cloudReady, profile]);
   useEffect(() => { saveTouchCustom(touchCustom); }, [touchCustom]);
+  useEffect(() => { saveGameControls(gameControls); }, [gameControls]);
   useEffect(() => {
     const resize = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
     window.addEventListener('resize', resize);
@@ -320,9 +323,9 @@ function App() {
   const activeMap = MAPS.find((map) => map.id === selectedMap) ?? MAPS[0];
   const touchLayout = touchCustom?.positions ?? defaultTouchLayout(viewport.width, viewport.height);
   const touchSizes: TouchSizes = touchCustom?.sizes ?? { ...DEFAULT_TOUCH_SIZES };
-  const settingsPanel = panel === 'settings' ? <TouchSettings layout={touchLayout} sizes={touchSizes} viewport={viewport} onMove={moveTouchControl} onSize={sizeTouchControl} onReset={() => setTouchCustom(null)} onClose={closeSettings} /> : null;
+  const settingsPanel = panel === 'settings' ? <TouchSettings layout={touchLayout} sizes={touchSizes} viewport={viewport} sensitivity={gameControls.sensitivity} bindings={gameControls.bindings} onSensitivity={(value) => setGameControls((previous) => ({ ...previous, sensitivity: value }))} onBinding={(action: ControlAction, code: string) => setGameControls((previous) => ({ ...previous, bindings: { ...previous.bindings, [action]: code } }))} onResetKeyboard={() => setGameControls({ sensitivity: DEFAULT_MOUSE_SENSITIVITY, bindings: { ...DEFAULT_CONTROL_BINDINGS } })} onMove={moveTouchControl} onSize={sizeTouchControl} onReset={() => setTouchCustom(null)} onClose={closeSettings} /> : null;
 
-  if (running) return <><GameScreen key={runId} skin={equippedSkin} mapId={selectedMap} mode={selectedMode} difficulty={selectedDifficulty} room={room} sound={sound} touchLayout={touchLayout} touchSizes={touchSizes} viewport={viewport} onSettings={() => setPanel('settings')} onExit={exitGame} onRestart={restartGame} onResult={recordResult} />{settingsPanel}</>;
+  if (running) return <><GameScreen key={runId} skin={equippedSkin} mapId={selectedMap} mode={selectedMode} difficulty={selectedDifficulty} room={room} sound={sound} sensitivity={gameControls.sensitivity} bindings={gameControls.bindings} touchLayout={touchLayout} touchSizes={touchSizes} viewport={viewport} onSettings={() => setPanel('settings')} onExit={exitGame} onRestart={restartGame} onResult={recordResult} />{settingsPanel}</>;
 
   return <main className="lobby">
     <div className="lobby-art" />
