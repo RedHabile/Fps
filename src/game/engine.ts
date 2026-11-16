@@ -1017,6 +1017,11 @@ export class BreachEngine {
     this.firing = false;
   };
 
+  public setControls(sensitivity: number, bindings: ControlBindings) {
+    this.options.sensitivity = Math.max(0.25, Math.min(3, sensitivity));
+    this.options.bindings = bindings;
+  }
+
   public setPaused(paused: boolean) {
     this.paused = paused;
     this.firing = false;
@@ -1199,7 +1204,7 @@ export class BreachEngine {
       }
     }
     let forward = (this.keys.has(this.options.bindings.forward) || this.keys.has('KeyW') || this.keys.has('KeyZ') ? 1 : 0) - (this.keys.has(this.options.bindings.backward) ? 1 : 0) - this.touchMove.y;
-    let right = (this.keys.has(this.options.bindings.right) ? 1 : 0) - (this.keys.has(this.options.bindings.left) ? 1 : 0) + this.touchMove.x;
+    let right = (this.keys.has(this.options.bindings.right) ? 1 : 0) - (this.keys.has(this.options.bindings.left) || this.keys.has('KeyA') || this.keys.has('KeyQ') ? 1 : 0) + this.touchMove.x;
     const length = Math.hypot(forward, right);
     if (length > 1) {
       forward /= length;
