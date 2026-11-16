@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArrowDownRight, ArrowRight, Award, Check, CircleHelp, ClipboardList, Copy, Crosshair, LockKeyhole,
-  Play, Radio, RotateCcw, Settings2, ShoppingBag, Target, Trophy, UsersRound, Volume2, VolumeX, X,
+  Play, Radio, RotateCcw, Settings2, ShoppingBag, Target, UsersRound, Volume2, VolumeX, X,
 } from 'lucide-react';
 import GameScreen from './game/GameScreen';
+import { AccountWidget } from './components/Account';
+import { loadCloudProfile, restoreAccount, saveCloudProfile, type AuthUser } from './game/cloud';
 import { ACHIEVEMENTS, currentQuests, DIFFICULTIES, formatNumber, isSkinUnlocked, levelForXp, loadProfile, MAPS, MODES, questTimeRemaining, QUESTS, saveProfile, skinUnlockText, SKINS, type Difficulty, type GameMode, type MapId, type MatchResult, type Profile, type Quest, type Skin, type SkinId } from './game/data';
 import { randomRoomCode, RoomConnection, type RoomStatus } from './game/network';
 import WeaponArt from './game/WeaponArt';
 import TouchSettings from './game/TouchSettings';
 import { defaultTouchLayout, DEFAULT_TOUCH_SIZES, loadTouchCustom, saveTouchCustom, type TouchControl, type TouchPoint, type TouchSizes } from './game/touchLayout';
 
-type Panel = 'play' | 'arsenal' | 'quests' | 'achievements' | 'scores' | 'room' | 'help' | 'settings';
+type Panel = 'play' | 'arsenal' | 'quests' | 'achievements' | 'room' | 'help' | 'settings';
 
 function BrandMark({ small = false }: { small?: boolean }) {
   return <div className={`brand-lockup ${small ? 'brand-small' : ''}`}>
@@ -21,6 +23,8 @@ function BrandMark({ small = false }: { small?: boolean }) {
 
 function App() {
   const [profile, setProfile] = useState<Profile>(loadProfile);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [cloudReady, setCloudReady] = useState(false);
   const [panel, setPanel] = useState<Panel>('play');
   const [selectedSkin, setSelectedSkin] = useState<SkinId>(profile.equippedSkin);
   const [selectedMap, setSelectedMap] = useState<MapId>('depot');
@@ -41,6 +45,30 @@ function App() {
   const roomRef = useRef<RoomConnection | null>(null);
 
   useEffect(() => { saveProfile(profile); }, [profile]);
+  useEffect(() => {
+    let active = true;
+    void restoreAccount().then(async (restored) => {
+      if (!active || !restored) return;
+      try {
+        const cloudProfile = await loadCloudProfile(restored.id);
+        if (!active) return;
+        if (cloudProfile) setProfile(cloudProfile);
+        setUser(restored);
+        setCloudReady(true);
+      } catch (error) {
+        if (active) setToast(error instanceof Error ? error.message : 'Synchronisation impossible.');
+      }
+    });
+    return () => { active = false; };
+  }, []);
+  useEffect(() => {
+    if (!user || !cloudReady) return;
+    let active = true;
+    void saveCloudProfile(user.id, profile).catch((error) => {
+      if (active) setToast(error instanceof Error ? error.message : 'Sauvegarde cloud impossible.');
+    });
+    return () => { active = false; };
+  }, [user, cloudReady, profile]);
   useEffect(() => { saveTouchCustom(touchCustom); }, [touchCustom]);
   useEffect(() => {
     const resize = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
@@ -64,6 +92,21 @@ function App() {
     const timeout = setTimeout(() => setToast(''), 2600);
     return () => clearTimeout(timeout);
   }, [toast]);
+
+  const handleAuthenticated = useCallback(async (account: AuthUser) => {
+    const cloudProfile = await loadCloudProfile(account.id);
+    if (cloudProfile) setProfile(cloudProfile);
+    else await saveCloudProfile(account.id, profile);
+    setUser(account);
+    setCloudReady(true);
+    setToast('COMPTE CONNECTÉ / PROGRESSION SYNCHRONISÉE');
+  }, [profile]);
+
+  const handleSignedOut = useCallback(() => {
+    setUser(null);
+    setCloudReady(false);
+    setToast('DÉCONNEXION EFFECTUÉE');
+  }, []);
 
   const beginGame = useCallback(() => {
     setCountdownTarget(null);
@@ -292,9 +335,8 @@ function App() {
         <button className={panel === 'arsenal' ? 'active' : ''} onClick={() => { setSelectedSkin(profile.equippedSkin); setPanel('arsenal'); }}>BOUTIQUE</button>
         <button className={panel === 'quests' ? 'active' : ''} onClick={openQuests}>QU&Ecirc;TES{claimable && <i className="nav-notice" />}</button>
         <button className={panel === 'achievements' ? 'active' : ''} onClick={() => setPanel('achievements')}>SUCC&Egrave;S</button>
-        <button className={panel === 'scores' ? 'active' : ''} onClick={() => setPanel('scores')}>CLASSEMENT</button>
       </nav>
-      <div className="header-right"><div className="season-label"><span>SAISON</span><strong>01</strong></div><div className="header-divider" /><button className="credit-display" onClick={() => { setSelectedSkin(profile.equippedSkin); setPanel('arsenal'); }} title="Ouvrir la boutique de skins"><span className="credit-icon">&#9670;</span><strong>{formatNumber(profile.credits)}</strong><small>CR</small><span className="credit-plus">+</span></button><div className="operator-avatar"><span>BP</span><i /></div></div>
+      <div className="header-right"><div className="season-label"><span>SAISON</span><strong>01</strong></div><div className="header-divider" /><button className="credit-display" onClick={() => { setSelectedSkin(profile.equippedSkin); setPanel('arsenal'); }} title="Ouvrir la boutique de skins"><span className="credit-icon">&#9670;</span><strong>{formatNumber(profile.credits)}</strong><small>CR</small><span className="credit-plus">+</span></button><AccountWidget user={user} onAuthenticated={handleAuthenticated} onSignedOut={handleSignedOut} /><div className="operator-avatar"><span>BP</span><i /></div></div>
     </header>
 
     <aside className="side-rail" aria-label="Raccourcis">
@@ -302,7 +344,6 @@ function App() {
         <button className={panel === 'play' ? 'active' : ''} onClick={() => setPanel('play')} aria-label="Jouer" title="Jouer"><Crosshair size={20} /></button>
         <button className={panel === 'arsenal' ? 'active' : ''} onClick={() => { setSelectedSkin(profile.equippedSkin); setPanel('arsenal'); }} aria-label="Boutique de skins" title="Boutique de skins"><ShoppingBag size={19} /></button>
         <button className={panel === 'quests' ? 'active' : ''} onClick={openQuests} aria-label="Qu&ecirc;tes" title="Qu&ecirc;tes"><ClipboardList size={19} />{claimable && <i className="rail-notice" />}</button>
-        <button className={panel === 'scores' ? 'active' : ''} onClick={() => setPanel('scores')} aria-label="Classement" title="Classement"><Trophy size={19} /></button>
         <button className={panel === 'room' ? 'active' : ''} onClick={() => setPanel('room')} aria-label="Salon priv&eacute;" title="Salon priv&eacute;"><UsersRound size={19} /></button>
       </div>
       <div className="rail-bottom"><button className={panel === 'settings' ? 'active' : ''} onClick={() => setPanel('settings')} aria-label="Param&egrave;tres tactiles" title="Param&egrave;tres tactiles"><Settings2 size={19} /></button><button onClick={() => setSound((value) => !value)} aria-label={sound ? 'Couper le son' : 'Activer le son'} title={sound ? 'Couper le son' : 'Activer le son'}>{sound ? <Volume2 size={19} /> : <VolumeX size={19} />}</button><button className={panel === 'help' ? 'active' : ''} onClick={() => setPanel('help')} aria-label="Comment jouer" title="Comment jouer"><CircleHelp size={19} /></button><span className="rail-code">BP / 01</span></div>
@@ -325,8 +366,8 @@ function App() {
       <div className="hero-side-note"><span>{String(MAPS.findIndex((map) => map.id === selectedMap) + 1).padStart(2, '0')} / 04</span><i /><span>THE OBJECTIVE IS EVERYTHING</span></div>
     </div>
 
-    {panel !== 'play' && panel !== 'settings' && <div className="panel-backdrop" onClick={() => setPanel('play')}><section className={`menu-panel panel-${panel}`} onClick={(event) => event.stopPropagation()} aria-label={panel === 'arsenal' ? 'Boutique de skins' : panel === 'quests' ? 'Qu\u00eates' : panel === 'achievements' ? 'Succ\u00e8s' : panel === 'scores' ? 'Classement' : panel === 'room' ? 'Salon priv\u00e9' : 'Comment jouer'}>
-      <div className="panel-top"><div className="panel-kicker"><span /> BREACH POINT <i>/</i> {panel === 'arsenal' ? 'COLLECTION' : panel === 'quests' ? 'MISSIONS QUOTIDIENNES' : panel === 'achievements' ? 'DISTINCTIONS' : panel === 'scores' ? 'ARCHIVES' : panel === 'room' ? 'ESCOUADE' : 'GUIDE TACTIQUE'}</div><button className="panel-close" onClick={() => setPanel('play')} aria-label="Fermer"><X size={20} /></button></div>
+    {panel !== 'play' && panel !== 'settings' && <div className="panel-backdrop" onClick={() => setPanel('play')}><section className={`menu-panel panel-${panel}`} onClick={(event) => event.stopPropagation()} aria-label={panel === 'arsenal' ? 'Boutique de skins' : panel === 'quests' ? 'Qu\u00eates' : panel === 'achievements' ? 'Succ\u00e8s' : panel === 'room' ? 'Salon priv\u00e9' : 'Comment jouer'}>
+      <div className="panel-top"><div className="panel-kicker"><span /> BREACH POINT <i>/</i> {panel === 'arsenal' ? 'COLLECTION' : panel === 'quests' ? 'MISSIONS QUOTIDIENNES' : panel === 'achievements' ? 'DISTINCTIONS' : panel === 'room' ? 'ESCOUADE' : 'GUIDE TACTIQUE'}</div><button className="panel-close" onClick={() => setPanel('play')} aria-label="Fermer"><X size={20} /></button></div>
       {panel === 'arsenal' && <>
         <div className="panel-heading"><div><h2>BOUTIQUE<span>.</span></h2><p>38 skins à collectionner. Progressez, réussissez des défis extrêmes ou dépensez vos crédits.</p></div><div className="panel-balance"><small>VOTRE SOLDE</small><strong><span>&#9670;</span> {formatNumber(profile.credits)} <i>CR</i></strong></div></div>
         <div className="profile-progression"><div className="profile-level"><span>NIVEAU OPÉRATEUR</span><strong>{playerLevel}</strong></div><div className="profile-xp"><div><b>{formatNumber(xpProgress)} / 500 XP</b><small>{formatNumber(profile.xp)} XP AU TOTAL</small></div><div className="quest-progress"><i style={{ width: `${xpProgress / 500 * 100}%` }} /></div></div><div className="profile-achievement-count"><strong>{profile.achievements.length}/{ACHIEVEMENTS.length}</strong><small>SUCCÈS</small></div></div>
@@ -354,11 +395,6 @@ function App() {
           return <div className={`achievement-row \${unlocked ? 'unlocked' : ''}`} key={achievement.id}><div className="achievement-medal"><Award size={22} /></div><div className="achievement-copy"><strong>{achievement.name}</strong><p>{achievement.description}</p><div className="quest-progress"><i style={{ width: `\${progress / achievement.target * 100}%` }} /></div><small>{progress} / {achievement.target}</small></div><div className="achievement-reward"><b>{unlocked ? 'DÉBLOQUÉ' : 'EN COURS'}</b><span>{rewardSkin ? `SKIN \${rewardSkin.name}` : 'DISTINCTION'}</span></div></div>;
         })}</div>
         <div className="panel-footnote"><span className="status-dot" /> SUCCÈS PERMANENTS / SKINS EXCLUSIFS CONSERVÉS SUR CET APPAREIL</div>
-      </>}
-      {panel === 'scores' && <>
-        <div className="panel-heading"><div><h2>VOS ARCHIVES<span>.</span></h2><p>Chaque mission laisse une trace. Voici vos meilleurs r&eacute;sultats.</p></div><div className="record-summary"><div><small>MISSIONS</small><strong>{profile.matches}</strong></div><div><small>VICTOIRES</small><strong>{profile.wins}</strong></div></div></div>
-        <div className="score-table"><div className="score-table-head"><span>RANG</span><span>R&Eacute;SULTAT</span><span>&Eacute;LIMINATIONS</span><span>DATE</span><span>POINTS</span></div>        {profile.records.length ? profile.records.map((record, index) => <div className="score-row" key={`${record.date}-${index}`}><strong><i>{String(index + 1).padStart(2, '0')}</i></strong><span className={record.won ? 'win-text' : ''}>{record.won ? 'VICTOIRE' : 'D\u00c9FAITE'} <i className="mode-tag">{record.mode === 'tdm' ? 'TDM' : 'S&D'}</i></span><span>{record.kills}</span><span>{record.date}</span><strong>{formatNumber(record.points)}</strong></div>) : <div className="empty-scores"><Trophy size={31} strokeWidth={1.2} /><strong>AUCUNE MISSION ENREGISTR&Eacute;E</strong><span>Votre l&eacute;gende commence &agrave; votre premi&egrave;re partie.</span><button onClick={startSolo}>LANCER UNE PARTIE <ArrowRight size={15} /></button></div>}</div>
-        <div className="panel-footnote"><span className="status-dot" /> CLASSEMENT LOCAL / ENREGISTR&Eacute; SUR CET APPAREIL</div>
       </>}
       {panel === 'room' && <>
         <div className="panel-heading"><div><h2>SALON PRIV&Eacute;<span>.</span></h2><p>Jusqu'&agrave; 10 joueurs. Choisissez votre &eacute;quipe, l'IA occupe les places libres.</p></div><UsersRound className="panel-heading-icon" size={38} strokeWidth={1.1} /></div>
