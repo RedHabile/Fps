@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { Cloud, LogIn, LogOut, ShieldCheck, UserRound, X } from "lucide-react";
 import { resendConfirmationEmail, signIn, signOut, signUp, type AuthUser } from "../game/cloud";
 
@@ -54,7 +55,7 @@ export function AccountWidget({ user, onAuthenticated, onSignedOut }: {
       {user ? <Cloud size={15} /> : <UserRound size={15} />}
       <span>{user ? "COMPTE CONNECTÉ" : "COMPTE"}</span>
     </button>
-    {open && <div className="account-backdrop" role="dialog" aria-modal="true" aria-label="Compte Breach Point" onClick={() => setOpen(false)}>
+    {open && createPortal(<div className="account-backdrop" role="dialog" aria-modal="true" aria-label="Compte Breach Point" onClick={() => setOpen(false)}>
       <section className="account-panel" onClick={(event) => event.stopPropagation()}>
         <div className="account-heading">
           <div><small><ShieldCheck size={13} /> IDENTITÉ EN LIGNE</small><h2>MON COMPTE</h2></div>
@@ -81,6 +82,6 @@ export function AccountWidget({ user, onAuthenticated, onSignedOut }: {
         {message && <p className="account-message" role="status">{message}</p>}
         <p className="account-note">Ne partage jamais ton mot de passe. La session reste privée sur chaque appareil.</p>
       </section>
-    </div>}
+    </div>, document.body)}
   </>;
 }
