@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent } from 'react';
 import { Bomb, Crosshair, Flashlight, Move, Pause, Repeat2, RotateCcw, Settings2, X, Zap, Keyboard, MousePointer2 } from 'lucide-react';
 import {
   TOUCH_CONTROLS, TOUCH_SIZE_MAX, TOUCH_SIZE_MIN,
@@ -38,7 +38,7 @@ export default function TouchSettings({ layout, sizes, viewport, sensitivity, bi
   const previewWidth = Math.max(130, maxHeight * viewport.width / Math.max(1, viewport.height));
 
   useEffect(() => {
-    const escape = (event: globalThis.KeyboardEvent) => {
+    const escape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -61,7 +61,7 @@ export default function TouchSettings({ layout, sizes, viewport, sensitivity, bi
     Space: 'ESPACE', ShiftLeft: 'MAJ G', ShiftRight: 'MAJ D',
     ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→',
   }[code] || code.replace(/^Key/, '').replace(/^Digit/, ''));
-  const captureKey = (event: globalThis.KeyboardEvent, action: ControlAction) => {
+  const captureKey = (event: KeyboardEvent, action: ControlAction) => {
     event.preventDefault();
     event.stopPropagation();
     if (event.code === 'Escape') { setCapturing(null); return; }
@@ -89,7 +89,7 @@ export default function TouchSettings({ layout, sizes, viewport, sensitivity, bi
     });
   };
 
-  const keyMove = (event: KeyboardEvent<HTMLButtonElement>, control: TouchControl) => {
+  const keyMove = (event: ReactKeyboardEvent<HTMLButtonElement>, control: TouchControl) => {
     const step = event.shiftKey ? 0.05 : 0.01;
     const dx = event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0;
     const dy = event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0;
