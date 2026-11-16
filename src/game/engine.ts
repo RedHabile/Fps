@@ -3,6 +3,7 @@ import { ARMORS, SKINS, TDM_DURATION, TDM_KILL_TARGET, TDM_RESPAWN_DELAY, WEAPON
 import { type NetworkMessage, type RoomConnection } from './network';
 import { blocked, buildWorld, findPath, lineClear, obstaclesForMap, SITES, MAP_SCALE, type Obstacle } from './world';
 import { buildOperator, setOperatorWeapon, type OperatorRig } from './character';
+import { DEFAULT_CONTROL_BINDINGS, type ControlBindings } from './controls';
 import { buildViewWeapon } from './weapons3d';
 
 type SiteId = 'A' | 'B';
@@ -177,6 +178,8 @@ interface EngineOptions {
   difficulty: Difficulty;
   room: RoomConnection | null;
   sound: boolean;
+  sensitivity: number;
+  bindings: ControlBindings;
   onHud: (hud: GameHUD) => void;
   onFinish: (result: MatchResult) => void;
   onPause: () => void;
@@ -968,7 +971,7 @@ export class BreachEngine {
       return;
     }
     if (this.paused || this.hostPaused) return;
-    if (this.phase === 'playing' && ['KeyW', 'KeyZ', 'KeyA', 'KeyQ', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ShiftRight'].includes(event.code)) event.preventDefault();
+    if (this.phase === 'playing' && [...Object.values(this.options.bindings), 'KeyW', 'KeyA', 'KeyQ', 'ShiftLeft', 'ShiftRight'].includes(event.code)) event.preventDefault();
     this.keys.add(event.code);
     if (event.repeat) return;
     this.ensureAudio();
@@ -978,17 +981,18 @@ export class BreachEngine {
       if (event.code === 'Enter' && !(event.target instanceof HTMLButtonElement)) this.readyToDeploy();
       return;
     }
-    if (event.code === 'KeyR') this.reload();
-    if (event.code === 'KeyE') this.interact();
-    if (event.code === 'KeyF' || event.code === 'KeyX') this.swapWeapon();
-    if (event.code === 'KeyG') this.throwGrenade('frag');
-    if (event.code === 'KeyV') this.throwGrenade('flash');
-    if (event.code === 'Space') this.setFiring(true);
+    const keys = this.options.bindings || DEFAULT_CONTROL_BINDINGS;
+    if (event.code === keys.reload) this.reload();
+    if (event.code === keys.interact) this.interact();
+    if (event.code === keys.swap) this.swapWeapon();
+    if (event.code === keys.frag) this.throwGrenade('frag');
+    if (event.code === keys.flash) this.throwGrenade('flash');
+    if (event.code === keys.fire) this.setFiring(true);
   };
 
   private keyUp = (event: KeyboardEvent) => {
     this.keys.delete(event.code);
-    if (event.code === 'Space') this.firing = false;
+    if (event.code === this.options.bindings.fire) this.firing = false;
   };
 
   private mouseDown = (event: MouseEvent) => {
@@ -1024,8 +1028,9 @@ export class BreachEngine {
 
   public look(dx: number, dy: number) {
     if (this.paused || this.hostPaused || this.phase !== 'playing' || !this.player.alive) return;
-    this.yaw -= dx * 0.0024;
-    this.pitch = clamp(this.pitch - dy * 0.0021, -1.05, 1.05);
+    const sensitivity = Math.max(0.25, Math.min(3, this.options.sensitivity || 1));
+    this.yaw -= dx * 0.0024 * sensitivity;
+    this.pitch = clamp(this.pitch - dy * 0.0021 * sensitivity, -1.05, 1.05);
   }
 
   public setMove(x: number, y: number) {
@@ -1193,8 +1198,8 @@ export class BreachEngine {
         this.reserve -= amount;
       }
     }
-    let forward = (this.keys.has('KeyW') || this.keys.has('KeyZ') ? 1 : 0) - (this.keys.has('KeyS') ? 1 : 0) - this.touchMove.y;
-    let right = (this.keys.has('KeyD') ? 1 : 0) - (this.keys.has('KeyA') || this.keys.has('KeyQ') ? 1 : 0) + this.touchMove.x;
+    let forward = (this.keys.has(this.options.bindings.forward) || this.keys.has('KeyW') || this.keys.has('KeyZ') ? 1 : 0) - (this.keys.has(this.options.bindings.backward) ? 1 : 0) - this.touchMove.y;
+    let right = (this.keys.has(this.options.bindings.right) ? 1 : 0) - (this.keys.has(this.options.bindings.left) ? 1 : 0) + this.touchMove.x;
     const length = Math.hypot(forward, right);
     if (length > 1) {
       forward /= length;
