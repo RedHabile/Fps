@@ -99,6 +99,10 @@ export default function GameScreen({ skin, mapId, mode, difficulty, room, sound,
   }, [paused, result, disconnected]);
 
   useEffect(() => {
+    engineRef.current?.setControls(sensitivity, bindings);
+  }, [sensitivity, bindings]);
+
+  useEffect(() => {
     if (!room) return;
     return room.subscribe((message) => {
       if (message.type === 'restart' && room.status.role === 'guest') onRestart();
