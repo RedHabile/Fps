@@ -5,6 +5,7 @@ import { BreachEngine, type GameHUD } from './engine';
 import { type RoomConnection } from './network';
 import WeaponArt from './WeaponArt';
 import { touchPosition, type TouchLayout, type TouchSizes, type ViewportSize } from './touchLayout';
+import { DEFAULT_CONTROL_BINDINGS, type ControlBindings } from './controls';
 
 interface GameScreenProps {
   skin: Skin;
@@ -13,6 +14,8 @@ interface GameScreenProps {
   difficulty: Difficulty;
   room: RoomConnection | null;
   sound: boolean;
+  sensitivity: number;
+  bindings: ControlBindings;
   touchLayout: TouchLayout;
   touchSizes: TouchSizes;
   viewport: ViewportSize;
@@ -38,7 +41,7 @@ function timeLabel(seconds: number) {
   return `${Math.floor(clamped / 60)}:${String(clamped % 60).padStart(2, '0')}`;
 }
 
-export default function GameScreen({ skin, mapId, mode, difficulty, room, sound, touchLayout, touchSizes, viewport, onSettings, onExit, onRestart, onResult }: GameScreenProps) {
+export default function GameScreen({ skin, mapId, mode, difficulty, room, sound, sensitivity, bindings, touchLayout, touchSizes, viewport, onSettings, onExit, onRestart, onResult }: GameScreenProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<BreachEngine | null>(null);
@@ -66,6 +69,8 @@ export default function GameScreen({ skin, mapId, mode, difficulty, room, sound,
         difficulty,
         room,
         sound,
+        sensitivity,
+        bindings: bindings || DEFAULT_CONTROL_BINDINGS,
         onHud: setHud,
         onFinish: (matchResult) => {
           setResult(matchResult);
