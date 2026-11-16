@@ -1,14 +1,19 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
-import { Bomb, Crosshair, Flashlight, Move, Pause, Repeat2, RotateCcw, Settings2, X, Zap } from 'lucide-react';
+import { Bomb, Crosshair, Flashlight, Move, Pause, Repeat2, RotateCcw, Settings2, X, Zap, Keyboard, MousePointer2 } from 'lucide-react';
 import {
   TOUCH_CONTROLS, TOUCH_SIZE_MAX, TOUCH_SIZE_MIN,
   type TouchControl, type TouchLayout, type TouchPoint, type TouchSizes, type ViewportSize,
 } from './touchLayout';
+import { type ControlAction, type ControlBindings } from './controls';
 
 interface TouchSettingsProps {
   layout: TouchLayout;
   sizes: TouchSizes;
   viewport: ViewportSize;
+  sensitivity: number;
+  bindings: ControlBindings;
+  onSensitivity: (value: number) => void;
+  onBinding: (action: ControlAction, code: string) => void;
   onMove: (control: TouchControl, point: TouchPoint) => void;
   onSize: (control: TouchControl, size: number) => void;
   onReset: () => void;
@@ -22,10 +27,12 @@ const names: Record<TouchControl, string> = {
 const baseSizes: Record<TouchControl, number> = { move: 50, fire: 36, reload: 28, action: 28, pause: 28, swap: 30, frag: 30, flash: 30 };
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
-export default function TouchSettings({ layout, sizes, viewport, onMove, onSize, onReset, onClose }: TouchSettingsProps) {
+export default function TouchSettings({ layout, sizes, viewport, sensitivity, bindings, onSensitivity, onBinding, onMove, onSize, onReset, onClose }: TouchSettingsProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ control: TouchControl; pointer: number; dx: number; dy: number } | null>(null);
   const [selected, setSelected] = useState<TouchControl>('fire');
+  const [tab, setTab] = useState<'keyboard' | 'touch'>('keyboard');
+  const [capturing, setCapturing] = useState<ControlAction | null>(null);
   const maxHeight = Math.min(340, Math.max(200, viewport.height * 0.48));
   const previewWidth = Math.max(130, maxHeight * viewport.width / Math.max(1, viewport.height));
 
@@ -34,12 +41,33 @@ export default function TouchSettings({ layout, sizes, viewport, onMove, onSize,
       if (event.key !== 'Escape') return;
       event.preventDefault();
       event.stopImmediatePropagation();
+      if (capturing) { setCapturing(null); return; }
       onClose();
     };
     window.addEventListener('keydown', escape, true);
     return () => window.removeEventListener('keydown', escape, true);
-  }, [onClose]);
+  }, [onClose, capturing]);
 
+
+  const actions: { id: ControlAction; label: string }[] = [
+    { id: 'forward', label: 'Avancer' }, { id: 'backward', label: 'Reculer' },
+    { id: 'left', label: 'Aller à gauche' }, { id: 'right', label: 'Aller à droite' },
+    { id: 'fire', label: 'Action principale' }, { id: 'reload', label: 'Recharger' },
+    { id: 'interact', label: 'Interagir' }, { id: 'swap', label: 'Changer d’équipement' },
+    { id: 'frag', label: 'Commande secondaire 1' }, { id: 'flash', label: 'Commande secondaire 2' },
+  ];
+  const keyName = (code: string) => ({
+    Space: 'ESPACE', ShiftLeft: 'MAJ G', ShiftRight: 'MAJ D',
+    ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→',
+  }[code] || code.replace(/^Key/, '').replace(/^Digit/, ''));
+  const captureKey = (event: globalThis.KeyboardEvent, action: ControlAction) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.code === 'Escape') { setCapturing(null); return; }
+    if (event.code === 'Tab') return;
+    onBinding(action, event.code);
+    setCapturing(null);
+  };
   const pointerDown = (event: PointerEvent<HTMLButtonElement>, control: TouchControl) => {
     event.preventDefault();
     setSelected(control);
@@ -89,8 +117,9 @@ export default function TouchSettings({ layout, sizes, viewport, onMove, onSize,
   return <div className="panel-backdrop touch-settings-backdrop" onClick={onClose}>
     <section className="menu-panel touch-settings-panel" aria-label="Param&egrave;tres des commandes tactiles" onClick={(event) => event.stopPropagation()}>
       <div className="panel-top"><div className="panel-kicker"><span /> BREACH POINT <i>/</i> PARAM&Egrave;TRES</div><button className="panel-close" onClick={onClose} onPointerUp={(event) => touchRelease(event, onClose)} aria-label="Fermer les param&egrave;tres"><X size={20} /></button></div>
-      <div className="panel-heading"><div><h2>COMMANDES<br /><span>TACTILES.</span></h2><p>Placez chaque commande l&agrave; o&ugrave; elle vous convient.</p></div><div className="touch-heading-actions"><button className="touch-reset-compact" onClick={onReset} onPointerUp={(event) => touchRelease(event, onReset)} aria-label="R&eacute;initialiser les commandes" title="R&eacute;initialiser"><RotateCcw size={16} /></button><Settings2 className="panel-heading-icon" size={36} strokeWidth={1.1} /></div></div>
-      <div className="touch-settings-body">
+      <div className="panel-heading"><div><h2>PARAM&Egrave;TRES<br /><span>DE JEU.</span></h2><p>Sensibilit&eacute;, touches et commandes tactiles.</p></div><div className="touch-heading-actions"><button className="touch-reset-compact" onClick={onReset} onPointerUp={(event) => touchRelease(event, onReset)} aria-label="R&eacute;initialiser les commandes" title="R&eacute;initialiser"><RotateCcw size={16} /></button><Settings2 className="panel-heading-icon" size={36} strokeWidth={1.1} /></div></div>
+      <div className="settings-tabs"><button className={tab === "keyboard" ? "active" : ""} onClick={() => setTab("keyboard")}><Keyboard size={15}/> CLAVIER & SOURIS</button><button className={tab === "touch" ? "active" : ""} onClick={() => setTab("touch")}><MousePointer2 size={15}/> COMMANDES TACTILES</button></div>
+      {tab === "keyboard" ? <div className="keyboard-settings-body"><div className="sensitivity-card"><span className="settings-kicker">01 / SOURIS</span><h3>SENSIBILIT&Eacute; DE LA SOURIS</h3><div className="sensitivity-value">{sensitivity.toFixed(2).replace(".", ",")}<small>x</small></div><input aria-label="Sensibilité de la souris" className="touch-size-slider" type="range" min="0.25" max="3" step="0.05" value={sensitivity} onChange={(event) => onSensitivity(Number(event.target.value))}/><div className="sensitivity-labels"><span>LENTE</span><span>RAPIDE</span></div><p>R&egrave;gle la vitesse de rotation de la vue avec la souris.</p></div><div className="bindings-card"><span className="settings-kicker">02 / CLAVIER</span><h3>CONFIGURATION DES TOUCHES</h3><div className="bindings-grid">{actions.map((action) => <div className="binding-row" key={action.id}><span>{action.label}</span><button className={capturing === action.id ? "is-listening" : ""} onClick={() => setCapturing(action.id)} onKeyDown={(event) => captureKey(event.nativeEvent, action.id)}>{capturing === action.id ? "APPUYEZ..." : keyName(bindings[action.id])}</button></div>)}</div><p>Clique sur une touche puis appuie sur la nouvelle touche à utiliser.</p></div></div> : <div className="touch-settings-body">
         <div className="touch-preview-wrap"><div ref={previewRef} className="touch-preview" style={{ aspectRatio: `${viewport.width} / ${viewport.height}`, width: `min(100%, ${previewWidth}px)` }}>
           <div className="preview-horizon" /><div className="preview-crosshair">+</div><div className="preview-map">A <span>/</span> B</div>
           {TOUCH_CONTROLS.map((control) => {
@@ -103,7 +132,7 @@ export default function TouchSettings({ layout, sizes, viewport, onMove, onSize,
           <div className="touch-size-block"><div className="touch-size-head"><span>TAILLE : {names[selected].toUpperCase()}</span><strong>{Math.round(sizes[selected] * 100)}%</strong></div><input className="touch-size-slider" type="range" min={TOUCH_SIZE_MIN} max={TOUCH_SIZE_MAX} step={0.05} value={sizes[selected]} onChange={(event) => onSize(selected, Number(event.target.value))} aria-label={`Taille du bouton ${names[selected]}`} /><div className="touch-size-row">{TOUCH_CONTROLS.map((control) => <button key={control} className={`touch-size-chip ${selected === control ? 'active' : ''}`} onClick={() => setSelected(control)}>{names[control]}</button>)}</div></div>
           <p className="touch-settings-hint">AU CLAVIER : UTILISEZ LES FL&Egrave;CHES POUR D&Eacute;PLACER UN BOUTON.</p><button className="secondary-button touch-reset" onClick={onReset} onPointerUp={(event) => touchRelease(event, onReset)}><RotateCcw size={16} /> R&Eacute;INITIALISER</button></div>
       </div>
-      <div className="panel-footnote"><span className="status-dot" /> LES CHANGEMENTS S'APPLIQUENT IMM&Eacute;DIATEMENT EN PARTIE</div>
+      {tab === "touch" && <div className="panel-footnote"><span className="status-dot" /> LES CHANGEMENTS S'APPLIQUENT IMM&Eacute;DIATEMENT EN PARTIE</div>}
     </section>
   </div>;
 }
