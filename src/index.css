@@ -484,8 +484,8 @@ button{border:0}
 /* Account and cloud sync */
 .account-trigger{display:flex;align-items:center;gap:8px;padding:9px 11px;border:1px solid rgba(169,237,218,.3);background:rgba(8,24,27,.72);color:#bdebd9;font:700 9px var(--mono);letter-spacing:.08em;white-space:nowrap;transition:background .2s,border-color .2s}
 .account-trigger:hover{background:rgba(86,142,121,.22);border-color:var(--mint)}
-.account-backdrop{position:fixed;z-index:90;inset:0;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(2,8,12,.84);backdrop-filter:blur(9px)}
-.account-panel{width:min(440px,100%);padding:24px;background:linear-gradient(145deg,#182d30,#0b171d);border:1px solid rgba(169,237,218,.35);box-shadow:0 25px 90px #0009;color:#eaf2ee}
+.account-backdrop{position:fixed;z-index:9999;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(2,8,12,.84);backdrop-filter:blur(9px);overflow-y:auto;overscroll-behavior:contain}
+.account-panel{box-sizing:border-box;width:min(440px,100%);max-height:calc(100dvh - 32px);overflow-y:auto;overscroll-behavior:contain;margin:auto;padding:24px;background:linear-gradient(145deg,#182d30,#0b171d);border:1px solid rgba(169,237,218,.35);box-shadow:0 25px 90px #0009;color:#eaf2ee}
 .account-heading{display:flex;align-items:flex-start;justify-content:space-between;padding-bottom:17px;border-bottom:1px solid var(--line)}
 .account-heading small{display:flex;align-items:center;gap:7px;color:var(--mint);font:600 9px var(--mono);letter-spacing:.18em}
 .account-heading h2{margin:7px 0 0;font:800 30px var(--display);letter-spacing:.04em}
@@ -508,4 +508,4 @@ button{border:0}
 .account-message{border:1px solid #a9edda44;background:#a9edda0b;color:#bdebd9}
 .account-note{margin:15px 0 0;padding-top:12px;border-top:1px solid #ffffff12;color:#6f8981;font:8px/1.6 var(--mono)}
 @media(max-width:900px){.account-trigger{padding:8px;font-size:8px}.header-right{gap:12px;padding:0 12px}}
-@media(max-width:620px){.account-trigger span{display:none}.account-trigger{width:34px;height:34px;justify-content:center;padding:0}.header-right{gap:8px}.account-panel{padding:18px}}
+@media(max-width:620px){.account-trigger span{display:none}.account-trigger{width:34px;height:34px;justify-content:center;padding:0}.header-right{gap:8px}.account-backdrop{padding:10px}.account-panel{max-height:calc(100dvh - 20px);padding:18px}}
