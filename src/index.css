@@ -479,3 +479,33 @@ button{border:0}
 .skin-card.skin-locked{border-color:rgba(120,145,130,.13);filter:saturate(.72)}.skin-card.skin-locked .weapon-drawing{opacity:.58}.skin-lock-label{display:inline-flex;align-items:center;gap:4px;color:#d7b77e!important;font-size:8px!important}
 .achievement-list{display:grid;gap:8px;margin:12px 0 18px}.achievement-row{display:grid;grid-template-columns:44px minmax(0,1fr) 112px;align-items:center;gap:13px;padding:13px 14px;border:1px solid rgba(130,158,142,.2);background:rgba(10,22,21,.48)}.achievement-row.unlocked{border-color:rgba(132,214,166,.45);background:rgba(36,86,58,.18)}.achievement-medal{width:42px;height:42px;display:grid;place-items:center;border:1px solid rgba(144,190,166,.3);color:#849b8e}.achievement-row.unlocked .achievement-medal{color:#f4d58d;border-color:#b99958}.achievement-copy strong{font:700 16px 'Barlow Condensed',sans-serif;letter-spacing:.06em;color:#e4f0e7}.achievement-copy p{margin:3px 0 7px;font-size:11px;color:#a7b9ad}.achievement-copy small{display:block;margin-top:4px;font:9px 'IBM Plex Mono',monospace;color:#91a99a}.achievement-reward{display:flex;flex-direction:column;gap:4px;text-align:right}.achievement-reward b{font:10px 'IBM Plex Mono',monospace;color:#e8c982}.achievement-reward span{font-size:8px;color:#8ea397;letter-spacing:.06em}
 @media(max-width:700px){.profile-progression{grid-template-columns:64px minmax(0,1fr) 55px;gap:9px;padding:10px}.profile-level span,.profile-achievement-count small,.profile-xp small{font-size:7px}.profile-level strong{font-size:25px}.profile-xp b{font-size:8px}.profile-achievement-count strong{font-size:19px}.achievement-row{grid-template-columns:34px minmax(0,1fr) 75px;gap:8px;padding:9px}.achievement-medal{width:32px;height:32px}.achievement-copy strong{font-size:13px}.achievement-copy p{font-size:9px}.achievement-reward b{font-size:8px}.achievement-reward span{font-size:7px}}
+
+
+/* Account and cloud sync */
+.account-trigger{display:flex;align-items:center;gap:8px;padding:9px 11px;border:1px solid rgba(169,237,218,.3);background:rgba(8,24,27,.72);color:#bdebd9;font:700 9px var(--mono);letter-spacing:.08em;white-space:nowrap;transition:background .2s,border-color .2s}
+.account-trigger:hover{background:rgba(86,142,121,.22);border-color:var(--mint)}
+.account-backdrop{position:fixed;z-index:90;inset:0;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(2,8,12,.84);backdrop-filter:blur(9px)}
+.account-panel{width:min(440px,100%);padding:24px;background:linear-gradient(145deg,#182d30,#0b171d);border:1px solid rgba(169,237,218,.35);box-shadow:0 25px 90px #0009;color:#eaf2ee}
+.account-heading{display:flex;align-items:flex-start;justify-content:space-between;padding-bottom:17px;border-bottom:1px solid var(--line)}
+.account-heading small{display:flex;align-items:center;gap:7px;color:var(--mint);font:600 9px var(--mono);letter-spacing:.18em}
+.account-heading h2{margin:7px 0 0;font:800 30px var(--display);letter-spacing:.04em}
+.account-close{display:grid;place-items:center;width:34px;height:34px;background:transparent;border:1px solid #49615b;color:#d9e9e1}
+.account-form,.account-session{display:flex;flex-direction:column;gap:11px;padding-top:18px}
+.account-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:7px}
+.account-tabs button{padding:10px 5px;background:transparent;border:1px solid #405650;color:#93aaa1;font:600 9px var(--mono);letter-spacing:.08em}
+.account-tabs button.active{border-color:var(--mint);background:#a9edda12;color:var(--mint)}
+.account-form label{color:#9bb4aa;font:600 9px var(--mono);letter-spacing:.12em}
+.account-form input{width:100%;padding:12px;border:1px solid #3b514c;background:#071116;color:#f1f7f2;font:12px var(--mono);outline:none}
+.account-form input:focus{border-color:var(--mint)}
+.account-form>p,.account-session p{margin:0;color:#91a9a0;font:10px/1.6 var(--mono)}
+.account-resend{padding:9px;border:1px solid #41675d;background:transparent;color:#b7e9d6;font:600 8px var(--mono);letter-spacing:.06em}
+.account-submit{display:flex;align-items:center;justify-content:center;gap:9px;padding:13px;background:var(--mint);color:#10231f;font:800 11px var(--display);letter-spacing:.08em}
+.account-submit:disabled,.account-resend:disabled{opacity:.45;cursor:not-allowed}
+.account-session>small{color:var(--mint);font:600 9px var(--mono);letter-spacing:.15em}
+.account-session>strong{overflow-wrap:anywhere;color:#f1f7f2;font:600 13px var(--mono)}
+.account-error,.account-message{margin:13px 0 0;padding:11px;font:10px/1.55 var(--mono)}
+.account-error{border:1px solid #fb718555;background:#fb718510;color:#fda4af}
+.account-message{border:1px solid #a9edda44;background:#a9edda0b;color:#bdebd9}
+.account-note{margin:15px 0 0;padding-top:12px;border-top:1px solid #ffffff12;color:#6f8981;font:8px/1.6 var(--mono)}
+@media(max-width:900px){.account-trigger{padding:8px;font-size:8px}.header-right{gap:12px;padding:0 12px}}
+@media(max-width:620px){.account-trigger span{display:none}.account-trigger{width:34px;height:34px;justify-content:center;padding:0}.header-right{gap:8px}.account-panel{padding:18px}}
