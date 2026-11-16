@@ -509,3 +509,25 @@ button{border:0}
 .account-note{margin:15px 0 0;padding-top:12px;border-top:1px solid #ffffff12;color:#6f8981;font:8px/1.6 var(--mono)}
 @media(max-width:900px){.account-trigger{padding:8px;font-size:8px}.header-right{gap:12px;padding:0 12px}}
 @media(max-width:620px){.account-trigger span{display:none}.account-trigger{width:34px;height:34px;justify-content:center;padding:0}.header-right{gap:8px}.account-backdrop{padding:10px}.account-panel{max-height:calc(100dvh - 20px);padding:18px}}
+
+
+/* Keyboard and mouse settings */
+.settings-tabs{display:flex;gap:8px;margin:0 0 16px;border-bottom:1px solid var(--line);padding-bottom:10px}
+.settings-tabs button{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 14px;background:transparent;border:1px solid #405b51;color:#9db8aa;font:700 9px var(--mono);letter-spacing:.08em}
+.settings-tabs button.active{background:#a9edda14;border-color:var(--mint);color:#dff9eb}
+.keyboard-settings-body{display:grid;grid-template-columns:minmax(220px,.8fr) minmax(0,1.2fr);gap:22px;padding:16px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.sensitivity-card,.bindings-card{padding:18px;background:rgba(7,19,22,.48);border:1px solid rgba(179,220,210,.14)}
+.settings-kicker{color:#9dd8c3;font:600 9px var(--mono);letter-spacing:.12em}
+.sensitivity-card h3,.bindings-card h3{margin:10px 0 14px;color:#e5f2e7;font:800 19px var(--display)}
+.sensitivity-value{color:#eafff3;font:800 46px/.95 var(--display);letter-spacing:.02em}
+.sensitivity-value small{margin-left:5px;color:var(--mint);font-size:20px}
+.sensitivity-labels{display:flex;justify-content:space-between;color:#77998b;font:600 8px var(--mono);letter-spacing:.12em}
+.sensitivity-card p,.bindings-card>p{color:#91a99d;font:10px/1.6 var(--mono)}
+.bindings-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px 14px}
+.binding-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;padding:6px 0;border-bottom:1px solid #ffffff10}
+.binding-row>span{overflow:hidden;color:#c3d7cb;font:10px var(--mono);text-overflow:ellipsis;white-space:nowrap}
+.binding-row button{flex:0 0 auto;min-width:54px;padding:7px 9px;background:#182e2a;border:1px solid #4b6f5f;color:#dff9eb;font:700 9px var(--mono)}
+.binding-row button.is-listening{background:#a9edda;color:#10231f;border-color:#a9edda;animation:binding-pulse .8s ease-in-out infinite alternate}
+@keyframes binding-pulse{from{opacity:.72}to{opacity:1}}
+@media(max-width:760px){.keyboard-settings-body{grid-template-columns:1fr;gap:12px;padding:10px 0}.settings-tabs button{flex:1;padding:9px 6px;font-size:8px}.sensitivity-card,.bindings-card{padding:13px}.bindings-grid{grid-template-columns:1fr 1fr;gap:4px 10px}.binding-row>span{font-size:9px}.sensitivity-card h3,.bindings-card h3{font-size:16px}}
+@media(max-width:440px){.bindings-grid{grid-template-columns:1fr}.touch-settings-panel .panel-heading h2{font-size:31px}}
