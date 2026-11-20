@@ -335,9 +335,10 @@ function App() {
       <button className="logo-button" onClick={() => setPanel('play')} aria-label="Accueil Breach Point"><BrandMark /></button>
       <nav className="main-nav" aria-label="Navigation principale">
         <button className={panel === 'play' ? 'active' : ''} onClick={() => setPanel('play')}>JOUER</button>
+        <button className={panel === 'achievements' ? 'active' : ''} onClick={() => setPanel('achievements')}>CARRIÈRE</button>
         <button className={panel === 'arsenal' ? 'active' : ''} onClick={() => { setSelectedSkin(profile.equippedSkin); setPanel('arsenal'); }}>BOUTIQUE</button>
-        <button className={panel === 'quests' ? 'active' : ''} onClick={openQuests}>QU&Ecirc;TES{claimable && <i className="nav-notice" />}</button>
-        <button className={panel === 'achievements' ? 'active' : ''} onClick={() => setPanel('achievements')}>SUCC&Egrave;S</button>
+        <button className={panel === 'settings' ? 'active' : ''} onClick={() => setPanel('settings')}>PARAMÈTRES</button>
+        <button className={panel === 'help' ? 'active' : ''} onClick={() => setPanel('help')}>APPRENDRE</button>
       </nav>
       <div className="header-right"><div className="season-label"><span>SAISON</span><strong>01</strong></div><div className="header-divider" /><button className="credit-display" onClick={() => { setSelectedSkin(profile.equippedSkin); setPanel('arsenal'); }} title="Ouvrir la boutique de skins"><span className="credit-icon">&#9670;</span><strong>{formatNumber(profile.credits)}</strong><small>CR</small><span className="credit-plus">+</span></button><AccountWidget user={user} onAuthenticated={handleAuthenticated} onSignedOut={handleSignedOut} /><div className="operator-avatar"><span>BP</span><i /></div></div>
     </header>
@@ -369,8 +370,8 @@ function App() {
       <div className="hero-side-note"><span>{String(MAPS.findIndex((map) => map.id === selectedMap) + 1).padStart(2, '0')} / 04</span><i /><span>THE OBJECTIVE IS EVERYTHING</span></div>
     </div>
 
-    {panel !== 'play' && panel !== 'settings' && <div className="panel-backdrop" onClick={() => setPanel('play')}><section className={`menu-panel panel-${panel}`} onClick={(event) => event.stopPropagation()} aria-label={panel === 'arsenal' ? 'Boutique de skins' : panel === 'quests' ? 'Qu\u00eates' : panel === 'achievements' ? 'Succ\u00e8s' : panel === 'room' ? 'Salon priv\u00e9' : 'Comment jouer'}>
-      <div className="panel-top"><div className="panel-kicker"><span /> BREACH POINT <i>/</i> {panel === 'arsenal' ? 'COLLECTION' : panel === 'quests' ? 'MISSIONS QUOTIDIENNES' : panel === 'achievements' ? 'DISTINCTIONS' : panel === 'room' ? 'ESCOUADE' : 'GUIDE TACTIQUE'}</div><button className="panel-close" onClick={() => setPanel('play')} aria-label="Fermer"><X size={20} /></button></div>
+    {panel !== 'play' && panel !== 'settings' && <div className="panel-backdrop" onClick={() => setPanel('play')}><section className={`menu-panel panel-${panel}`} onClick={(event) => event.stopPropagation()} aria-label={panel === 'arsenal' ? 'Boutique de skins' : panel === 'quests' ? 'Qu\u00eates' : panel === 'achievements' ? 'Carrière' : panel === 'room' ? 'Salon priv\u00e9' : 'Comment jouer'}>
+      <div className="panel-top"><div className="panel-kicker"><span /> BREACH POINT <i>/</i> {panel === 'arsenal' ? 'COLLECTION' : panel === 'quests' ? 'MISSIONS QUOTIDIENNES' : panel === 'achievements' ? 'CARRIÈRE / PROGRESSION' : panel === 'room' ? 'ESCOUADE' : 'GUIDE TACTIQUE'}</div><button className="panel-close" onClick={() => setPanel('play')} aria-label="Fermer"><X size={20} /></button></div>
       {panel === 'arsenal' && <>
         <div className="panel-heading"><div><h2>BOUTIQUE<span>.</span></h2><p>38 skins à collectionner. Progressez, réussissez des défis extrêmes ou dépensez vos crédits.</p></div><div className="panel-balance"><small>VOTRE SOLDE</small><strong><span>&#9670;</span> {formatNumber(profile.credits)} <i>CR</i></strong></div></div>
         <div className="profile-progression"><div className="profile-level"><span>NIVEAU OPÉRATEUR</span><strong>{playerLevel}</strong></div><div className="profile-xp"><div><b>{formatNumber(xpProgress)} / 500 XP</b><small>{formatNumber(profile.xp)} XP AU TOTAL</small></div><div className="quest-progress"><i style={{ width: `${xpProgress / 500 * 100}%` }} /></div></div><div className="profile-achievement-count"><strong>{profile.achievements.length}/{ACHIEVEMENTS.length}</strong><small>SUCCÈS</small></div></div>
@@ -389,7 +390,14 @@ function App() {
         <div className="panel-footnote"><span className="status-dot" /> 3 MISSIONS ALÉATOIRES / RENOUVELLEMENT AUTOMATIQUE TOUTES LES 24 HEURES</div>
       </>}
       {panel === 'achievements' && <>
-        <div className="panel-heading"><div><h2>SUCCÈS<span>.</span></h2><p>Défis permanents. Certains skins exclusifs ne s'obtiennent qu'en les terminant.</p></div><div className="record-summary"><div><small>DÉBLOQUÉS</small><strong>{profile.achievements.length}/{ACHIEVEMENTS.length}</strong></div><div><small>NIVEAU</small><strong>{playerLevel}</strong></div></div></div>
+        <div className="panel-heading"><div><h2>CARRIÈRE<span>.</span></h2><p>Suivez vos performances, vos victoires et les distinctions gagnées au fil des opérations.</p></div><div className="record-summary"><div><small>DÉBLOQUÉS</small><strong>{profile.achievements.length}/{ACHIEVEMENTS.length}</strong></div><div><small>NIVEAU</small><strong>{playerLevel}</strong></div></div></div>
+        <div className="career-overview" aria-label="Statistiques personnelles">
+          <div><small>PARTIES JOUÉES</small><strong>{formatNumber(profile.matches)}</strong></div>
+          <div><small>VICTOIRES</small><strong>{formatNumber(profile.wins)}</strong></div>
+          <div><small>ÉLIMINATIONS</small><strong>{formatNumber(profile.totalKills)}</strong></div>
+          <div><small>MEILLEUR SCORE D'ÉLIMINATIONS</small><strong>{formatNumber(profile.bestMatchKills)}</strong></div>
+        </div>
+        <div className="career-section-title"><span>DISTINCTIONS</span><small>{profile.achievements.length} / {ACHIEVEMENTS.length} DÉBLOQUÉES</small></div>
         <div className="achievement-list">{ACHIEVEMENTS.map((achievement) => {
           const unlocked = profile.achievements.includes(achievement.id);
           const value = achievement.metric === 'wins' ? profile.wins : achievement.metric === 'matches' ? profile.matches : achievement.metric === 'kills' ? profile.totalKills : achievement.metric === 'hardWins' ? profile.hardWins : achievement.metric === 'bestMatchKills' ? profile.bestMatchKills : playerLevel;
@@ -397,7 +405,7 @@ function App() {
           const rewardSkin = SKINS.find((skin) => skin.achievementId === achievement.id);
           return <div className={`achievement-row \${unlocked ? 'unlocked' : ''}`} key={achievement.id}><div className="achievement-medal"><Award size={22} /></div><div className="achievement-copy"><strong>{achievement.name}</strong><p>{achievement.description}</p><div className="quest-progress"><i style={{ width: `\${progress / achievement.target * 100}%` }} /></div><small>{progress} / {achievement.target}</small></div><div className="achievement-reward"><b>{unlocked ? 'DÉBLOQUÉ' : 'EN COURS'}</b><span>{rewardSkin ? `SKIN \${rewardSkin.name}` : 'DISTINCTION'}</span></div></div>;
         })}</div>
-        <div className="panel-footnote"><span className="status-dot" /> SUCCÈS PERMANENTS / SKINS EXCLUSIFS CONSERVÉS SUR CET APPAREIL</div>
+        <div className="panel-footnote"><span className="status-dot" /> DISTINCTIONS PERMANENTES / SKINS EXCLUSIFS CONSERVÉS SUR CET APPAREIL</div>
       </>}
       {panel === 'room' && <>
         <div className="panel-heading"><div><h2>SALON PRIV&Eacute;<span>.</span></h2><p>Jusqu'&agrave; 10 joueurs. Choisissez votre &eacute;quipe, l'IA occupe les places libres.</p></div><UsersRound className="panel-heading-icon" size={38} strokeWidth={1.1} /></div>
